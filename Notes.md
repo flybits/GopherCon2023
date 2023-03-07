@@ -3,10 +3,10 @@
 The outline of the talk will be as follows:
 * [Introduction](#Introduction) and problem statement [5 mins]
 * Stage set up: a naive application performing gRPC streaming [2 mins - contains demo]
-* [Handling panics](#Handling-errors-and-panics) to avoid abortion [2 mins - contains demo]
+* [Handling panics](#Handling-errors-and-panics) to avoid premature termination [2 mins - contains demo]
 * [Handling interruptions gracefully](#Handling-interruptions-gracefully) [20 mins - demo and explanations]
   * Simulate receiving and sending stream data errors [3 mins - contains demo]
-  * Explaining the overall strategy to avoid abortion [5 mins]
+  * Explaining the overall strategy to avoid premature termination [5 mins]
   * Resuming streaming in case of streaming server errors/termination [3 mins - contains demo]  
   * Introducing graceful shutdown [3 mins - contains demo]
   * Resuming streaming on client termination or receiving errors as part of graceful shutdown [7 mins - contains demo]
@@ -60,7 +60,7 @@ func doMagic(offset int) {
 ```
 
 # Handling interruptions gracefully
-The second category for streaming interruption manifests itself as errors at the point of sending or receiving gRPC stream data (sendMsg and receiveMsg functions). These could occur as the result of temporary network flukes, or termination of either client or server pods. Pods in kubernetes are ephemeral and could get terminated for exceeding resource thresholds assigned to the containers, problems in the node hosting the pod, or simply automatic scaling down, just to name a few reasons. Any of these reasons would constitute an error at the exit/entry points of the gRPC stream, causing abortion of the process. However, our goal is to make the application resilient to these problems and make it automatically resume the streaming as soon as possible from the point of interruption, without any data loss. 
+The second category for streaming interruption manifests itself as errors at the point of sending or receiving gRPC stream data (sendMsg and receiveMsg functions). These could occur as the result of temporary network flukes, or termination of either client or server pods. Pods in kubernetes are ephemeral and could get terminated for exceeding resource thresholds assigned to the containers, problems in the node hosting the pod, or simply automatic scaling down, just to name a few reasons. Any of these reasons would constitute an error at the exit/entry points of the gRPC stream, causing premature termination of the process. However, our goal is to make the application resilient to these problems and make it automatically resume the streaming as soon as possible from the point of interruption, without any data loss. 
 
 Therefore, upon receiving errors from sendMsg or receiveMsg, we need to reestablish the streaming to resume the process. However, a key realization is that the gRPC streaming is not a synchronous process, meaning while streaming, the server does not wait for the messages to be received by the client. Thus the last message sent from the server is not the last message received by the client. Therefore upon reestablishing streaming, we cannot rely on the server to continue from the last message it sent, rather need to rely on the last message that the client received and continue from that point. Another key realization is that the error that aborted the process might prevent immediate reestablishing of streaming. For example, if the only pod of the client was terminated, and there is no other client pod ready, streaming cannot immediately re-continue. So we need a mechanism to retry reestablishing the streaming and continuing it until it is successful.
 
