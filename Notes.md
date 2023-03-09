@@ -80,7 +80,12 @@ There will be three different channels used in total to assist us.
 2. The second channel `requestInterruptionChannel` is for communicating requesting graceful interruption to the streaming goroutines. The goroutine responsible for graceful shutdown will loop through messages in the `inProgressStreamingChannel`, and for each will send a “request for an interruption” message. The streaming goroutines periodically listen to this channel, and if they receive a message, will initiate the graceful termination. 
 3. The third and final channel `interruptionCompletedChannel` is for confirming that the interruption has completed successfully. The streaming goroutine upon finishing interruption (after sending the corresponding event to message bus), will send a message on this channel, informing the main graceful shutdown goroutine that the interruption is done. On the main graceful shutdown goroutine, if for every request for interruption message we receive an interruption completed message, we can continue with the rest of the graceful shutdown and fully close our message queue. 
 
-It is noteworthy that, each streaming goroutine, once finished the streaming completely will need to read from the first channel, effectively removing it from in-progress streaming channel. Please see the code snippet below that demonstrates how the goroutine that receives SIGTERM can use the channels described above to interrupt the streaming goroutines.
+It is noteworthy that, each streaming goroutine, once finished the streaming completely will need to read from the first channel, effectively removing it from in-progress streaming channel. The image below demonstrates the communication between the goroutines and the different stages of graceful interruption.
+
+![image](https://user-images.githubusercontent.com/17835858/223915363-82913191-2b54-4d99-9236-e23313e1f772.png)
+
+
+Please see the code snippet below that demonstrates how the goroutine that receives SIGTERM can use the channels described above to interrupt the streaming goroutines.
 ```
 // a loop here is appropriate because there could be multiple goroutines that need to be gracefully interrupted
 	breakOut := false
