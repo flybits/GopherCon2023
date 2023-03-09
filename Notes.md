@@ -82,7 +82,7 @@ There will be three different channels used in total to assist us.
 
 It is noteworthy that, each streaming goroutine, once finished the streaming completely will need to read from the first channel, effectively removing it from in-progress streaming channel. The image below demonstrates the communication between the goroutines and the different stages of graceful interruption.
 
-![image](https://user-images.githubusercontent.com/17835858/223919929-80d97fb5-3f16-4035-9fb2-f388aad5b7fa.png)
+![image](https://user-images.githubusercontent.com/17835858/223923562-a4066637-d988-4f67-8c00-aa2bf1ebc79b.png)
 
 
 Please see the code snippet below that demonstrates how the goroutine that receives SIGTERM can use the channels described above to interrupt the streaming goroutines.
