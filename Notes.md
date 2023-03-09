@@ -85,28 +85,40 @@ It is noteworthy that, each streaming goroutine, once finished the streaming com
 ![image](https://user-images.githubusercontent.com/17835858/223923562-a4066637-d988-4f67-8c00-aa2bf1ebc79b.png)
 
 
-Please see the code snippet below that demonstrates how the goroutine that receives SIGTERM can use the channels described above to interrupt the streaming goroutines.
+Please see [this](https://goplay.tools/snippet/SmKLCF77eB5) playground link for simulation of how the goroutine performing graceful shutdown can use the aforementioned channels to perform graceful interruption. Also, the code snippet below summurazied the approach.
+
 ```
-// a loop here is appropriate because there could be multiple goroutines that need to be gracefully interrupted
-	breakOut := false
+interruptionRequestedCount := 0
+	breakout := false
+
+	// a loop here is appropriate because there could be multiple goroutines that need to be gracefully interrupted
 	for {
 		select {
 		case <-inProgressStreamingChannel:
 			requestInterruptionChannel <- true
-			logger.Info("interruption message sent")
+			fmt.Println(fmt.Sprintf("interruption message %v sent", interruptionRequestedCount))
 
-			// wait for completion to finish
-			<-interruptionCompletedChannel
-			logger.Info("interruption completed")
+			interruptionRequestedCount++
 		default:
-			breakOut = true
+			breakout = true
 			break
 		}
-		if breakOut {
-			logger.Info("finished gracefully interrupting long running tasks")
+
+		if interruptionRequestedCount == 0 {
+			fmt.Println("no graceful interruptions were needed")
+		}
+		if breakout {
 			break
 		}
 	}
+
+	// wait for each interruption to complete
+	for i := 0; i < interruptionRequestedCount; i++ {
+		<-interruptionCompletedChannel
+		fmt.Println(fmt.Sprintf("interruption %v completed", i))
+	}
+
+	fmt.Println("greceful interruption completely finished for all goroutines")
 ```
 
 At this point we can clarify the strategy for when streaming is interrupted because of a problem from the server side, and not the client. Before we mentioned the strategy is that the client upon receiving errors from the server, will keep the offset (last received user), and retry streaming. This is done simply by sending the interruption event message to the message broker (RabbitMQ), and the consumers of the message (possibly the same pod) will retry the streaming from the offset upon receiving it. So this is the graceful interruption behavior very similar to the case where SIGTERM was received by the client, with one minor difference. This time, when the interruption is completed, we do not send a message to the channel for marking interruption completed. This is because that channel is used by the goroutine listening on SIGTERM for graceful shutdown on the client service, to know when to proceed, and in this case the client pod is not shutting down.   
