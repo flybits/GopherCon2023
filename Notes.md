@@ -85,7 +85,7 @@ It is noteworthy that, each streaming goroutine, once finished the streaming com
 ![image](https://user-images.githubusercontent.com/17835858/224375981-6e61d55b-4ebe-4c4f-ae90-8a36fcf8dfc0.png)
 
 
-Please see [this](https://goplay.tools/snippet/R_q1eZTxTE0) playground link for simulation of how the goroutine performing graceful shutdown can use the aforementioned channels to perform graceful interruption. Also, the code snippet below summurazies the approach.
+Please see [this](https://goplay.tools/snippet/ehadgGKvCZA) playground link for simulation of how the goroutine performing graceful shutdown can use the aforementioned channels to perform graceful interruption. Also, the code snippet below summurazies the approach.
 
 ```
         interruptionRequestedCount := 0
@@ -118,7 +118,7 @@ Please see [this](https://goplay.tools/snippet/R_q1eZTxTE0) playground link for 
 		fmt.Printf("interruption %v completed\n", i)
 	}
 
-	fmt.Println("greceful interruption completely finished for all goroutines")
+	fmt.Println("graceful interruption completely finished for all goroutines")
 ```
 
 At this point we can clarify the strategy for when streaming is interrupted because of a problem from the server side, and not the client. Before we mentioned the strategy is that the client upon receiving errors from the server, will keep the offset (last received user), and retry streaming. This is done simply by sending the interruption event message to the message broker (RabbitMQ), and the consumers of the message (possibly the same pod) will retry the streaming from the offset upon receiving it. So this is the graceful interruption behavior very similar to the case where SIGTERM was received by the client, with one minor difference. This time, when the interruption is completed, we do not send a message to the channel for marking interruption completed. This is because that channel is used by the goroutine listening on SIGTERM for graceful shutdown on the client service, to know when to proceed, and in this case the client pod is not shutting down.   
