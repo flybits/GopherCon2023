@@ -85,7 +85,7 @@ It is noteworthy that, each streaming goroutine, once finished the streaming com
 ![image](https://user-images.githubusercontent.com/17835858/223923562-a4066637-d988-4f67-8c00-aa2bf1ebc79b.png)
 
 
-Please see [this](https://goplay.tools/snippet/fvvjtTezmWM) playground link for simulation of how the goroutine performing graceful shutdown can use the aforementioned channels to perform graceful interruption. Also, the code snippet below summurazies the approach.
+Please see [this](https://goplay.tools/snippet/R_q1eZTxTE0) playground link for simulation of how the goroutine performing graceful shutdown can use the aforementioned channels to perform graceful interruption. Also, the code snippet below summurazies the approach.
 
 ```
         interruptionRequestedCount := 0
@@ -96,7 +96,7 @@ Please see [this](https://goplay.tools/snippet/fvvjtTezmWM) playground link for 
 		select {
 		case <-inProgressStreamingChannel:
 			requestInterruptionChannel <- true
-			fmt.Println(fmt.Sprintf("interruption message %v sent", interruptionRequestedCount))
+			fmt.Printf("interruption message %v sent\n", interruptionRequestedCount)
 
 			interruptionRequestedCount++
 		default:
@@ -115,7 +115,7 @@ Please see [this](https://goplay.tools/snippet/fvvjtTezmWM) playground link for 
 	// wait for each interruption to complete
 	for i := 0; i < interruptionRequestedCount; i++ {
 		<-interruptionCompletedChannel
-		fmt.Println(fmt.Sprintf("interruption %v completed", i))
+		fmt.Printf("interruption %v completed\n", i)
 	}
 
 	fmt.Println("greceful interruption completely finished for all goroutines")
