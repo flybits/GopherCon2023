@@ -50,7 +50,7 @@ func doMagic(offset int) {
 		if r := recover(); r != nil {
 			go func() {
 				offset++
-				doMagic(offset, ch)
+				doMagic(offset)
 			}()
 		}
 	}()
