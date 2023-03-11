@@ -26,7 +26,7 @@ Elevator Pitch
 
 You have 300 characters to sell your talk. This is known as the "elevator pitch". Make it as exciting and enticing as possible.
 
-> Let’s build a Kubernetes-deployed Go application that performs gRPC streaming between services and make it resilient to interruptions caused by application/network errors. Furthermore, let's make it auto-recover from forceful terminations (SIGKILL signal) where graceful interruption is not possible!
+> Let’s build a Kubernetes-deployed Go application that performs gRPC streaming between services and make it resilient to interruptions caused by application/network errors. Furthermore, let's make it auto-recover from forceful terminations where graceful interruption is not possible (SIGKILL signal)!
 
 Description
 -----------
