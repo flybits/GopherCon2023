@@ -82,7 +82,7 @@ There will be three different channels used in total to assist us.
 
 It is noteworthy that, each streaming goroutine, once finished the streaming completely will need to read from the first channel, effectively removing it from in-progress streaming channel. The image below demonstrates the communication between the goroutines and the different stages of graceful interruption.
 
-![image](https://user-images.githubusercontent.com/17835858/224452208-7e798d25-3061-4fdd-8e49-32c569ee0ade.png)
+![image](https://user-images.githubusercontent.com/17835858/224464787-cf0601ac-6e62-4b76-ae76-fcfcb6e2a25d.png)
 
 
 Please see [this](https://goplay.tools/snippet/jJ8Htm_JTaa) playground link for simulation of how the goroutine performing graceful shutdown can use the aforementioned channels to perform graceful interruption. Also, the code snippet below summurazies the approach.
