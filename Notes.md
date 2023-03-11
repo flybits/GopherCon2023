@@ -88,7 +88,7 @@ It is noteworthy that, each streaming goroutine, once finished the streaming com
 Please see [this](https://goplay.tools/snippet/jE6Ok22CJgY) playground link for a simulation of how the goroutine performing graceful shutdown can use the aforementioned channels and the WaitGroup to perform graceful interruption. Also, the code snippet below summurazies the approach from the perspective of the goroutine performing the graceful shutdown.
 
 ```
-        closing the inProgressStreamingChannel to prevent any new streaming from getting started
+        // closing the inProgressStreamingChannel to prevent any new streaming from getting started
 	close(inProgressStreamingChannel)
 	for range inProgressStreamingChannel {
 		wg.Add(1)
