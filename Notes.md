@@ -88,7 +88,7 @@ It is noteworthy that, each streaming goroutine, once finished the streaming com
 Please see [this](https://goplay.tools/snippet/aakWWXLgSpz) playground link for simulation of how the goroutine performing graceful shutdown can use the aforementioned channels to perform graceful interruption. Also, the code snippet below summurazies the approach.
 
 ```
-       interruptionRequestedCount := 0
+        interruptionRequestedCount := 0
 	breakout := false
 
 	// a loop here is appropriate because there are multiple goroutines that might need interruption
