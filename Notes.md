@@ -88,13 +88,14 @@ It is noteworthy that, each streaming goroutine, once finished the streaming com
 Please see [this](https://goplay.tools/snippet/aakWWXLgSpz) playground link for simulation of how the goroutine performing graceful shutdown can use the aforementioned channels to perform graceful interruption. Also, the code snippet below summurazies the approach.
 
 ```
-        interruptionRequestedCount := 0
+       interruptionRequestedCount := 0
 	breakout := false
 
-	// a loop here is appropriate because there could be multiple goroutines that need to be gracefully interrupted
+	// a loop here is appropriate because there are multiple goroutines that might need interruption
 	for {
 		select {
 		case <-inProgressStreamingChannel:
+			wg.Add(1)
 			requestInterruptionChannel <- true
 			fmt.Printf("interruption message %v sent\n", interruptionRequestedCount)
 
@@ -112,13 +113,9 @@ Please see [this](https://goplay.tools/snippet/aakWWXLgSpz) playground link for 
 		}
 	}
 
-	// wait for each interruption to complete
-	for i := 0; i < interruptionRequestedCount; i++ {
-		<-interruptionCompletedChannel
-		fmt.Printf("interruption %v completed\n", i)
-	}
-
-	fmt.Println("graceful interruption completely finished for all goroutines")
+	// wait for every interruption to complete
+	wg.Wait()
+	// the rest of the graceful shutdown goes here
 ```
 
 At this point we can clarify the strategy for when streaming is interrupted because of a problem from the server side, and not the client. Before we mentioned the strategy is that the client upon receiving errors from the server, will keep the offset (last received user), and retry streaming. This is done simply by sending the interruption event message to the message broker (RabbitMQ), and the consumers of the message (possibly the same pod) will retry the streaming from the offset upon receiving it. So this is the graceful interruption behavior very similar to the case where SIGTERM was received by the client, with one minor difference. This time, when the interruption is completed, we do not send a message to the channel for marking interruption completed. This is because that channel is used by the goroutine listening on SIGTERM for graceful shutdown on the client service, to know when to proceed, and in this case the client pod is not shutting down.   
