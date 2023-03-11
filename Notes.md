@@ -97,17 +97,11 @@ Please see [this](https://goplay.tools/snippet/aakWWXLgSpz) playground link for 
 		case <-inProgressStreamingChannel:
 			wg.Add(1)
 			requestInterruptionChannel <- true
-			fmt.Printf("interruption message %v sent\n", interruptionRequestedCount)
-
-			interruptionRequestedCount++
 		default:
 			breakout = true
 			break
 		}
 
-		if interruptionRequestedCount == 0 {
-			fmt.Println("no graceful interruptions were needed")
-		}
 		if breakout {
 			break
 		}
