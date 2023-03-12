@@ -27,11 +27,13 @@ The total talk time is 45 minutes. It is noteworthy that to save time, the demos
 We’re on a quest to make a Go application run perfectly even if operational unpredictability or misconfigurations gets in the way. This is inspired by our real-life story of dealing with an event-driven microservice architecture deployed on Kubernetes where large-volume, business-critical communications (usually synchronous) were required between services with low latency. gRPC streaming was a suitable technology for addressing the requirements in almost all aspects except for one: tolerance for failure. The inherent Kubernetes pod ephemerality made it hard to guarantee uptime for the involved pods during the long-running tasks. Additionally, operational unpredictability (such as ever-changing end-user behavior) made it difficult to have a proactive response to resource allocation settings, misconfiguration of which amplifies pods ephemerality. Our solution was to make gRPC streaming fault tolerant by building resiliency and recovery in the application, so that the system self-recovers from interruptions and the business stays happy.
 
 This talk aims to provide a simplified version of the story, by omitting the business jargon, and focusing on the technical aspects. As such, it will be accompanied by a demo of how to evolve a simple Go application that is vulnerable to interruptions to long running tasks, to an application that can “handle” a variety of interruptions. There are two types of handling we’ll look at: 
+
 1. Graceful interruption and seamless resumption 
 2. Recovery (when graceful interruption is not possible)
 
 In more detail, we will start by introducing two services deployed on a Kubernetes cluster that perform gRPC streaming between each other. Service A (the server) will retrieve some data from a mocked db, validate it, and send it to service B (the client) via gRPC streaming, where service B will reformat the data for its own consumption. We will simulate, in ascending order of complexity, the reasons the streaming could get interrupted, and demonstrate what strategies we can employ to address them. There are three categories of interruptions:
-* Application panics/errors
+
+* Application panics/errors 
 * Streaming errors on sending and receiving stream data
 * Abrupt termination, such as pod termination due to SIGKILL 
 
