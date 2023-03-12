@@ -3,37 +3,21 @@
 The outline of the talk will be as follows:
 
 * [Introduction](#Introduction) and problem statement [5 mins]
-
 * Stage set up: a naive application performing gRPC streaming [2 mins - contains demo]
-
 * [Handling panics](#Handling-errors-and-panics) to avoid premature termination [2 mins - contains demo]
-
 * [Handling interruptions gracefully](#Handling-interruptions-gracefully) [20 mins - demo and explanations]
-
   * Simulate errors on receiving and sending stream data [3 mins - contains demo]
-  
   * Explaining the overall strategy to avoid premature termination [5 mins]
-  
   * Resuming streaming in case of server side streaming errors or termination [3 mins - contains demo]
-    
   * Introducing graceful shutdown in the client [3 mins - contains demo]
-  
   * Resuming streaming in case of client termination or errors with the help of graceful shutdown [7 mins - contains demo]
-  
 * [Recovery after forceful interruption](#Recovery-after-forceful-interruption) [15 mins - contains demo]
-
   * Explaining the problem and justifying the inevitability [2 mins]
-  
   * Simulating out-of-memory (OOM) termination as an example of forcible termination [3 mins - contains demo]
-  
   * Explaining strategy for recovery [3 mins]
-  
   * Introducing Kubernetes events receiver service [3 mins - contains demo]
-  
   * Making pods self-aware about their own name [1 mins - contains demo]
-  
   * Recovery after a forcible termination [3 mins - contains demo]
-  
 * [Conclusion](#Conclusion) and recap [1 mins]
 
 The total talk time is 45 minutes. It is noteworthy that to save time, the demos will be done by using pre-existing code snippets and pre-created containers (no live coding or deployment). The following sections explain in more detail what will be presented at each section.
@@ -155,4 +139,3 @@ To perform the recovery, the recoverer pod needs to identify the point of interr
 # Conclusion
 
 When the business requires highly efficient synchronous streaming, gRPC streaming is a great choice that can outperform other popular streaming technologies such as Kafka streams. However, gRPC streaming inherently lacks tolerance for failure or recovery mechanisms. In this talk, we demonstrated these disadvantages using simulated demos, and introduced strategies that can make an application performing gRPC streaming fault tolerant and resilient to various interruptions including panics, network disruptions and termination due to SIGTERM or SIGKILL. Kubernetes pod ephemerality should no longer be a risk to completion of the gRPC streaming as we built mechanisms to restore a gracefully interrupted process, or recover from a not graceful termination. A notable advantage gained is that the resiliency allows us to retroactively adjust our resource allocation thresholds for containers, as the business will not be impacted by minor misconfigurations. So in an operationally unpredictable environment, we can have peace of mind that the business can carry on seamlessly, and we have reaction time to make adjustments if needed to the configuration, based on our observability metrics.
-
