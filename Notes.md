@@ -91,23 +91,7 @@ Luckily, Kubernetes sends events when terminating pods that include the reason f
 
 Thanks to the “kubernetes-events-listener”, a running pod can receive an event that informs it another pod was forcibly terminated. But we still need to know whether the terminated pod was performing a gRPC stream that was terminated forcibly, to perform recovery. This can be accomplished, if each pod performing streaming adds its name to the metadata table for the streaming job. A pod can become self-aware of its name through an environment variable injected on the Kubernetes manifest referencing the pod name metadata. Please see the snippet below as an example.
 
-```
-apiVersion: v1
-kind: Pod
-metadata:
-  name: somePodName
-spec:
-  containers:
-    - name: test
-      image: someImage
-      command: [ "/bin/sh", "-c", "env" ]
-      env:
-        - name: MY_POD_NAME
-          valueFrom:
-            fieldRef:
-              fieldPath: metadata.name
-  restartPolicy: Never
-```
+![image](https://user-images.githubusercontent.com/17835858/224526586-4d3285d5-6df2-4afe-888c-f670844aa62c.png)
 
 Then, a running pod receiving the forcible termination event can look up in the database to see if there are any unfinished streams for the pod with that name. If there is, it knows it should start a recovery process to restore the streaming that was previously started.
 
