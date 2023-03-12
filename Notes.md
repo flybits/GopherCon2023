@@ -13,9 +13,9 @@ The outline of the talk will be as follows:
 * [Recovery after forceful interruption](#Recovery-after-forceful-interruption) [15 mins - contains demo]
   * Explaining the problem and justify importance [2 mins]
   * Simulating out-of-memory (OOM) termination as an example of forcible termination [3 mins - contains demo]
-  * Explaining strategy for recovery
-  * Building a Kubernetes events receiver service [5 mins - contains demo]
-  * Making pods self-aware about their own name [2 mins - contains demo]
+  * Explaining strategy for recovery [3 mins]
+  * Introducing Kubernetes events receiver service [3 mins - contains demo]
+  * Making pods self-aware about their own name [1 mins - contains demo]
   * Recovery after a forcible termination [3 mins - contains demo]
 * [Conclusion](#Conclusion) and recap [1 mins]
 
