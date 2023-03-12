@@ -45,20 +45,7 @@ If the panic happens on the server, in the recover function, we will simply spin
 
 For a sample demonstration please see [this](https://goplay.tools/snippet/NjlJkhv5jxe) playground link. In the sample demonstration, we simulate a server that encounters two panics (on indexes 0 and 2) while iterating over 5 items. Our recover function resumes the iteration after each panic from the point of failure, so that the program completes "processing" all the iterations that did not cause a panic. The code snippet below summarizes the approach. The same idea and procedure also applies to the client, where it can recover from panics at each iteration (piece of stream data received) and continue. 
 
-```
-func doMagic(offset int) {
-	defer func() {
-		if r := recover(); r != nil {
-			go func() {
-				offset++
-				doMagic(offset)
-			}()
-		}
-	}()
-        // the rest of the function carrying on the magic from provided offset
-	// where the offset gets incremented as each item is processed
-}
-```
+![image](https://user-images.githubusercontent.com/17835858/224526540-a11d02e6-abaf-4270-b852-b23231694a07.png)
 
 # Handling interruptions gracefully
 The second category for streaming interruption manifests itself as errors at the point of sending or receiving gRPC stream data (`sendMsg` and `receiveMsg` functions). These could occur as the result of temporary network disruptions, or termination of either client or server pods. Pods in Kubernetes are ephemeral and could get terminated for a number of reasons, including but not limited to exceeding resource thresholds assigned to the containers, problems in the node hosting the pod, or simply automatic scaling down. Any termination would constitute an error at the exit/entry points of the gRPC stream observed by the other side, causing premature termination of the process. However, our goal is to make the application resilient to these problems and make it automatically resume the streaming as soon as possible from the point of interruption, without any data loss. Therefore, upon receiving errors from `sendMsg` or `receiveMsg`, we need to reestablish the streaming to resume the process.
