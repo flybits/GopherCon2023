@@ -11,7 +11,7 @@ The outline of the talk will be as follows:
   * Introducing graceful shutdown in the client [3 mins - contains demo]
   * Resuming streaming in case of client termination or errors with the help of graceful shutdown [7 mins - contains demo]
 * [Recovery after forceful interruption](#Recovery-after-forceful-interruption) [15 mins - contains demo]
-  * Explaining the problem and justifying importance [2 mins]
+  * Explaining the problem and justifying the inevitability [2 mins]
   * Simulating out-of-memory (OOM) termination as an example of forcible termination [3 mins - contains demo]
   * Explaining strategy for recovery [3 mins]
   * Introducing Kubernetes events receiver service [3 mins - contains demo]
