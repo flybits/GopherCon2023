@@ -117,10 +117,10 @@ Thanks to the “kubernetes-events-listener”, a running pod can receive an eve
 apiVersion: v1
 kind: Pod
 metadata:
-  name: dapi-test-pod
+  name: somePodName
 spec:
   containers:
-    - name: test-container
+    - name: test
       image: someImage
       command: [ "/bin/sh", "-c", "env" ]
       env:
