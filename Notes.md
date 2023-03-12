@@ -111,7 +111,27 @@ Luckily, Kubernetes sends events when terminating pods that include the reason f
 
 ![image](https://user-images.githubusercontent.com/17835858/224461869-6f46ac97-9dbd-4a91-bc2c-4edc288b5b3c.png)
 
-Thanks to the “kubernetes-events-listener”, a running pod can receive an event that informs it another pod was forcibly terminated. But we still need to know whether the terminated pod was performing a gRPC stream that was terminated forcibly, to perform recovery. This can be accomplished, if each pod performing streaming adds its name to the metadata table for the streaming job. A pod can become self-aware of its name through an environment variable injected on the Kubernetes manifest referencing the pod name metadata. Then, a running pod receiving the forcible termination event can look up in the database to see if there are any unfinished streams for the pod with that name. If there is, it knows it should start a recovery process to restore the streaming that was previously started.
+Thanks to the “kubernetes-events-listener”, a running pod can receive an event that informs it another pod was forcibly terminated. But we still need to know whether the terminated pod was performing a gRPC stream that was terminated forcibly, to perform recovery. This can be accomplished, if each pod performing streaming adds its name to the metadata table for the streaming job. A pod can become self-aware of its name through an environment variable injected on the Kubernetes manifest referencing the pod name metadata. Please see the snippet below as an example.
+
+```
+apiVersion: v1
+kind: Pod
+metadata:
+  name: dapi-test-pod
+spec:
+  containers:
+    - name: test-container
+      image: someImage
+      command: [ "/bin/sh", "-c", "env" ]
+      env:
+        - name: MY_POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+  restartPolicy: Never
+```
+
+Then, a running pod receiving the forcible termination event can look up in the database to see if there are any unfinished streams for the pod with that name. If there is, it knows it should start a recovery process to restore the streaming that was previously started.
 
 To perform the recovery, the recoverer pod needs to identify the point of interruption. If we tag each piece of data that was received by the stream with the unique identifier for the stream, and store that along the data itself in the streaming client’s database, then we can use that information to find the point of interruption. The recoverer pod can ask the database for the “biggest userID (because we used a sort as our ordering) that is tagged with the unique id of the terminated streaming job, and use that as the offset for reestablishing the streaming job. And that’s it!
 
