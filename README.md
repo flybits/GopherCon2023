@@ -42,4 +42,4 @@ Notes
 
 This field supports Markdown. Notes will only be seen by reviewers during the CFP process. This is where you should explain things such as technical requirements, why you're the best person to speak on this subject, etc...
 
-please see [this](https://github.com/flybits/GopherCon2023/blob/proposal/Notes.md).
+please see [this](https://github.com/flybits/GopherCon2023/blob/main/Notes.md).
