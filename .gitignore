@@ -1,0 +1,15 @@
+# Compiled files
+main
+client/client
+server/server
+SERVICE_NAME-*
+.idea/
+
+# Test files
+*.log
+*.out
+*.test
+coverage/
+
+# Exceptions
+!Dockerfile.test
