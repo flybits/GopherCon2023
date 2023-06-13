@@ -18,7 +18,14 @@ func GetRoutes(h *Handler) []Route {
 			Pattern:     "/client/health",
 			HandlerFunc: CheckHealth,
 		},
+		{
+			Name:        "Start",
+			Method:      "GET",
+			Pattern:     "/start",
+			HandlerFunc: CheckHealth,
+		},
 	}
+
 }
 
 func CheckHealth(w http.ResponseWriter, r *http.Request) {
