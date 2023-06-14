@@ -1,0 +1,20 @@
+syntax = "proto3";
+
+package pb;
+
+option go_package = "github.com/flybits/gophercon2023/server/pb";
+
+service Server {
+  rpc GetData (DataRequest) returns (stream Data);
+}
+
+message Data {
+  string               UserID   = 1;
+  string               TenantID = 2;
+  string               DeviceID = 3;
+  string              Name = 4;
+}
+
+message DataRequest {
+  string           Request   = 1;
+}

@@ -22,13 +22,21 @@ func GetRoutes(h *Handler) []Route {
 			Name:        "Start",
 			Method:      "GET",
 			Pattern:     "/start",
-			HandlerFunc: CheckHealth,
+			HandlerFunc: Start,
 		},
 	}
 
 }
 
 func CheckHealth(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/text; charset=UTF-8")
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte("pong"))
+	return
+}
+
+func Start(w http.ResponseWriter, r *http.Request) {
+	
 	w.Header().Set("Content-Type", "application/text; charset=UTF-8")
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte("pong"))
