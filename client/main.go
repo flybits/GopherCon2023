@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/flybits/gophercon2023/client/handler"
+	"github.com/flybits/gophercon2023/client/service"
 	"log"
 	"net/http"
 	"os"
@@ -15,9 +16,13 @@ import (
 func main() {
 	var err error
 
+	sm, err := service.NewServerManager("server:8001")
+	if err != nil {
+		log.Printf("error when connecting to server grpc:%v", err)
+	}
 	log.Printf("Starting HTTP server ...")
 
-	h := handler.NewHandler()
+	h := handler.NewHandler(sm)
 	router := handler.NewRouter(h)
 	httpServer := &http.Server{
 		Addr:      ":8000",

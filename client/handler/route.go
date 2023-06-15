@@ -1,6 +1,11 @@
 package handler
 
-import "net/http"
+import (
+	"context"
+	"github.com/flybits/gophercon2023/server/pb"
+	"log"
+	"net/http"
+)
 
 // Route is the structure for an http route
 type Route struct {
@@ -10,35 +15,41 @@ type Route struct {
 	HandlerFunc http.HandlerFunc
 }
 
-func GetRoutes(h *Handler) []Route {
+func (h *Handler) GetRoutes() []Route {
 	return []Route{
 		{
 			Name:        "CheckHealth",
 			Method:      "GET",
 			Pattern:     "/client/health",
-			HandlerFunc: CheckHealth,
+			HandlerFunc: h.CheckHealth,
 		},
 		{
 			Name:        "Start",
 			Method:      "GET",
 			Pattern:     "/start",
-			HandlerFunc: Start,
+			HandlerFunc: h.Start,
 		},
 	}
 
 }
 
-func CheckHealth(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) CheckHealth(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/text; charset=UTF-8")
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte("pong"))
 	return
 }
 
-func Start(w http.ResponseWriter, r *http.Request) {
-	
+func (h *Handler) Start(w http.ResponseWriter, r *http.Request) {
+
+	go func() {
+		err := h.ServiceManager.GetStreamFromServer(context.Background(), &pb.DataRequest{})
+		if err != nil {
+			log.Printf("error happened: %v", err)
+		}
+	}()
 	w.Header().Set("Content-Type", "application/text; charset=UTF-8")
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte("pong"))
+	w.Write([]byte("stream started"))
 	return
 }

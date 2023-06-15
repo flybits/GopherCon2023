@@ -1,5 +1,14 @@
 # BUILD STAGE
 FROM golang:1.20-alpine
+ARG GITHUB_SSH_KEY
+
+RUN apk add --no-cache git openssh && \
+    mkdir /root/.ssh && \
+        echo "$GITHUB_SSH_KEY" > /root/.ssh/id_rsa && \
+        chmod 400 /root/.ssh/id_rsa && \
+        touch /root/.ssh/known_hosts && \
+        ssh-keyscan github.com >> /root/.ssh/known_hosts && \
+        git config --global url.git@github.com:.insteadOf https://github.com/
 
 # Set the working directory
 WORKDIR /app

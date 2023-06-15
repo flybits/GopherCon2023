@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/flybits/gophercon2023/server/handler"
+	"github.com/flybits/gophercon2023/server/logic"
 	"log"
 	"net/http"
 	"os"
@@ -14,6 +15,12 @@ import (
 
 func main() {
 	var err error
+
+	log.Printf("Initializing rpc server ...")
+	grpc, err := logic.Setup(":8001")
+	if err != nil {
+		panic(fmt.Sprintf("Could not initiate a listen on rpc requests: %s", err))
+	}
 
 	log.Printf("Starting HTTP server ...")
 
@@ -47,6 +54,10 @@ func main() {
 	} else {
 		log.Printf("Successfully shut down http server gracefully.")
 	}
+
+	// Note: This may be a blocking call
+	// https://godoc.org/google.golang.org/grpc#Server.GracefulStop
+	grpc.GracefulStop()
 
 	log.Printf("Exiting...")
 }

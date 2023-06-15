@@ -16,6 +16,11 @@ spec:
     spec:
       containers:
         - name: server
-          image: armanmasoumi/gophercon-server:4
+          image: armanmasoumi/gophercon-server:6
           ports:
-            - containerPort: 80
+            - name: http
+              containerPort: 8000
+              protocol: TCP
+            - name: grpc
+              containerPort: 8001
+              protocol: TCP

@@ -6,7 +6,12 @@ spec:
   selector:
     app: server
   ports:
-    - protocol: TCP
+    - name: http
+      protocol: TCP
       port: 80
       targetPort: 8000
+    - name: grpc
+      protocol: TCP
+      port: 8001
+      targetPort: 8001
   type: NodePort
