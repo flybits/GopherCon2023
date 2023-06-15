@@ -1,5 +1,5 @@
-github.com/flybits/gophercon2023/server v0.0.0-20230614235308-e8ed3ed6e86e h1:OY18JEgHp1lueqKA2YqwAHeISvSbxwyVvTFv6gW6DiQ=
-github.com/flybits/gophercon2023/server v0.0.0-20230614235308-e8ed3ed6e86e/go.mod h1:CnymMnbm2+8pBIRDnxUwi9HtKssAEfV2/PTrYLAi1qU=
+github.com/flybits/gophercon2023/server v0.0.0-20230615160103-25ef6e93ea5f h1:clq9upkkQGrYV8g1xxLtOosjSTuR1shkeI37ypjU5HQ=
+github.com/flybits/gophercon2023/server v0.0.0-20230615160103-25ef6e93ea5f/go.mod h1:CnymMnbm2+8pBIRDnxUwi9HtKssAEfV2/PTrYLAi1qU=
 github.com/golang/protobuf v1.5.0/go.mod h1:FsONVRAS9T7sI+LIUmWTfcYkHO4aIWwzhcaSAoJOfIk=
 github.com/golang/protobuf v1.5.3 h1:KhyjKVUg7Usr/dYsdSqoFveMYd5ko72D+zANwlG1mmg=
 github.com/golang/protobuf v1.5.3/go.mod h1:XVQd3VNwM+JqD3oG2Ue2ip4fOMUkwXdXDdiuN0vRsmY=

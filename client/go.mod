@@ -3,7 +3,7 @@ module github.com/flybits/gophercon2023/client
 go 1.19
 
 require (
-	github.com/flybits/gophercon2023/server v0.0.0-20230614235308-e8ed3ed6e86e
+	github.com/flybits/gophercon2023/server v0.0.0-20230615160103-25ef6e93ea5f
 	github.com/gorilla/mux v1.8.0
 	google.golang.org/grpc v1.55.0
 )

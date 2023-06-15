@@ -12,7 +12,7 @@ import (
 type (
 	ServerManager interface {
 		//Close() error
-		GetStreamFromServer(ctx context.Context, request *pb.DataRequest) error
+		GetStreamFromServer(ctx context.Context, offset int32) error
 	}
 
 	server struct {
@@ -38,19 +38,23 @@ func NewServerManager(address string) (ServerManager, error) {
 	}, nil
 }
 
-func (s *server) GetStreamFromServer(ctx context.Context, request *pb.DataRequest) error {
+func (s *server) GetStreamFromServer(ctx context.Context, offset int32) error {
 
 	defer func() {
 		if r := recover(); r != nil {
-			//fmt.Printf("Recovered from panic at offset %v. Error: %v \n", offset, r)
+			log.Printf("recovered from panic at offset %v: panic %v", offset, r)
+
 			go func() {
-				//request.Request
-				//	offset++
-				//fmt.Printf("will continue processing data from offset %d\n\n", offset)
-				//	doMagic(offset, ch)
+				offset++
+				log.Printf("will continue processing data from offset %d\n", offset)
+				s.GetStreamFromServer(ctx, offset)
 			}()
 		}
 	}()
+
+	request := &pb.DataRequest{
+		Offset: offset,
+	}
 
 	stream, err := s.grpcClient.GetData(ctx, request)
 	if err != nil {
@@ -82,11 +86,11 @@ func (s *server) GetStreamFromServer(ctx context.Context, request *pb.DataReques
 }
 
 func processData(data *pb.Data) error {
-	if data.UserID == "userID6" {
+	if data.Value == 6 {
 		return fmt.Errorf("mock error")
 	}
 
-	if data.UserID == "userID7" {
+	if data.Value == 7 {
 		panic("oops panic")
 	}
 
