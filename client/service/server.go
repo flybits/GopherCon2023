@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"fmt"
 	"github.com/flybits/gophercon2023/server/pb"
 	"google.golang.org/grpc"
 	"io"
@@ -38,6 +39,19 @@ func NewServerManager(address string) (ServerManager, error) {
 }
 
 func (s *server) GetStreamFromServer(ctx context.Context, request *pb.DataRequest) error {
+
+	defer func() {
+		if r := recover(); r != nil {
+			//fmt.Printf("Recovered from panic at offset %v. Error: %v \n", offset, r)
+			go func() {
+				//request.Request
+				//	offset++
+				//fmt.Printf("will continue processing data from offset %d\n\n", offset)
+				//	doMagic(offset, ch)
+			}()
+		}
+	}()
+
 	stream, err := s.grpcClient.GetData(ctx, request)
 	if err != nil {
 		return err
@@ -55,6 +69,26 @@ func (s *server) GetStreamFromServer(ctx context.Context, request *pb.DataReques
 		}
 
 		log.Printf("received data: %v", data)
+
+		err = processData(data)
+		if err != nil {
+			log.Printf("error when processing data: %v", err)
+			continue
+		}
+
+		log.Printf("processed data %v", data)
 	}
+	return nil
+}
+
+func processData(data *pb.Data) error {
+	if data.UserID == "userID6" {
+		return fmt.Errorf("mock error")
+	}
+
+	if data.UserID == "userID7" {
+		panic("oops panic")
+	}
+
 	return nil
 }

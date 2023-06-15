@@ -10,11 +10,9 @@ service Server {
 
 message Data {
   string               UserID   = 1;
-  string               TenantID = 2;
-  string               DeviceID = 3;
-  string              Name = 4;
+  int32                Value = 4;
 }
 
 message DataRequest {
-  string           Request   = 1;
+  int32           Offset   = 1;
 }
