@@ -4,7 +4,9 @@ go 1.19
 
 require (
 	github.com/flybits/gophercon2023/server v0.0.0-20230615160103-25ef6e93ea5f
+	github.com/google/uuid v1.3.0
 	github.com/gorilla/mux v1.8.0
+	github.com/streadway/amqp v1.1.0
 	google.golang.org/grpc v1.55.0
 )
 

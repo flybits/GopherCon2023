@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/flybits/gophercon2023/client/handler"
+	"github.com/flybits/gophercon2023/client/process"
 	"github.com/flybits/gophercon2023/client/service"
 	"log"
 	"net/http"
@@ -15,6 +16,26 @@ import (
 
 func main() {
 	var err error
+
+	p := process.NewProcess()
+	broker := process.Broker{}
+	broker.SetupBroker([]process.Exchange{
+		process.ExchangeWithDefaults("client", ""),
+	}, []process.Queue{
+		{
+			Name:       "rulesRules",
+			Durable:    true,
+			AutoDelete: false,
+			Exclusive:  false,
+			NoWait:     false,
+			Bindings: []process.Binding{
+				process.BindingWithDefaults("routingKey", "clint"),
+			},
+			Consumers: []process.Consumer{
+				process.ConsumerWithDefaults(false, p.ProcessAMQPMsg),
+			},
+		},
+	})
 
 	sm, err := service.NewServerManager("server:8001")
 	if err != nil {
