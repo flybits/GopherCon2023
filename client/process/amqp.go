@@ -140,12 +140,57 @@ type Exchange struct {
 	NoWait     bool
 }
 
+// BrokerOption sets optional parameters for broker
+type BrokerOption func(*Broker)
+
+// URIScheme is the option for setting the URI schema default amqp but can be changed to amqps
+func URIScheme(uriScheme string) BrokerOption {
+	return func(b *Broker) {
+		b.uriScheme = uriScheme
+	}
+}
+
+// Address is the option for setting host and port
+func Address(host string, port uint16) BrokerOption {
+	return func(b *Broker) {
+		b.host = host
+		b.port = port
+	}
+}
+
+// Credentials is the option for setting username and password
+func Credentials(username, password string) BrokerOption {
+	return func(b *Broker) {
+		b.username = username
+		b.password = password
+	}
+}
+
+// Vhost is the option for setting virtual host
+func Vhost(vhost string) BrokerOption {
+	return func(b *Broker) {
+		b.vhost = vhost
+	}
+}
+
+// Prefetch is the option for setting prefetch count and size
+func Prefetch(count, size int) BrokerOption {
+	return func(b *Broker) {
+		b.prefetchCount = count
+		b.prefetchSize = size
+	}
+}
+
 // SetupBroker creates a new instance of broker
-func (b *Broker) SetupBroker(exchanges []Exchange, queues []Queue) error {
+func (b *Broker) SetupBroker(exchanges []Exchange, queues []Queue, opts ...BrokerOption) error {
 	b.d = &amqpDialer{}
 	b.exchanges = exchanges
 	b.queues = queues
 	b.wg = &sync.WaitGroup{}
+
+	for _, opt := range opts {
+		opt(b)
+	}
 
 	if b.uriScheme == "" {
 		b.uriScheme = "amqp"
@@ -317,6 +362,47 @@ func (b *Broker) consume(delvc <-chan amqp.Delivery, handler HandlerFunc) {
 
 		}(d)
 	}
+}
+
+// Publish is an AMQP publish
+type Publish struct {
+	Exchange   string
+	Key        string
+	Mandatory  bool
+	Immediate  bool
+	Publishing Publishing
+}
+
+// Publishing is same as amqp.Publishing, so consumers of this package do not need to import amqp package too
+type Publishing amqp.Publishing
+
+// PublishWithDefaults creates a Publish with default values
+func PublishWithDefaults(exchange, key string, body []byte) Publish {
+	return Publish{
+		Exchange:  exchange,
+		Key:       key,
+		Mandatory: false,
+		Immediate: false,
+		Publishing: Publishing{
+			DeliveryMode: amqp.Transient,
+			Headers:      amqp.Table{},
+			ContentType:  "text/json",
+			Body:         body,
+		},
+	}
+}
+
+// Publish sends an AMQP Publishing to an exchange
+// SpanContext and RequestID should exist on context, otherwise they will be created
+func (b *Broker) Publish(ctx context.Context, p Publish) error {
+
+	err := b.ch.Publish(p.Exchange, p.Key, p.Mandatory, p.Immediate, amqp.Publishing(p.Publishing))
+
+	if err != nil {
+		return fmt.Errorf("could not publish message. %s", err)
+	}
+
+	return nil
 }
 
 // ExchangeWithDefaults creates an Exchange with default values

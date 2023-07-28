@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"github.com/flybits/gophercon2023/client/cmd/config"
 	"github.com/flybits/gophercon2023/client/handler"
 	"github.com/flybits/gophercon2023/client/process"
 	"github.com/flybits/gophercon2023/client/service"
@@ -19,25 +20,35 @@ func main() {
 
 	p := process.NewProcess()
 	broker := process.Broker{}
-	broker.SetupBroker([]process.Exchange{
+	err = broker.SetupBroker([]process.Exchange{
 		process.ExchangeWithDefaults("client", ""),
 	}, []process.Queue{
 		{
-			Name:       "rulesRules",
+			Name:       "client",
 			Durable:    true,
 			AutoDelete: false,
 			Exclusive:  false,
 			NoWait:     false,
 			Bindings: []process.Binding{
-				process.BindingWithDefaults("routingKey", "clint"),
+				process.BindingWithDefaults("routingKey", "client"),
 			},
 			Consumers: []process.Consumer{
 				process.ConsumerWithDefaults(false, p.ProcessAMQPMsg),
 			},
 		},
-	})
+	},
+		process.URIScheme(config.Global.RabbitmqScheme),
+		process.Address(config.Global.RabbitmqAddress, config.Global.RabbitmqPort),
+		process.Credentials(config.Global.RabbitmqUsername, config.Global.RabbitmqPassword),
+		process.Vhost(config.Global.RabbitmqVhost))
 
-	sm, err := service.NewServerManager("server:8001")
+	if err != nil {
+		log.Printf("error when connecting to rabbitmq server: %v", err)
+	} else {
+		log.Println("connected to rabbitmq server")
+	}
+
+	sm, err := service.NewServerManager("server:8001", &broker)
 	if err != nil {
 		log.Printf("error when connecting to server grpc:%v", err)
 	}

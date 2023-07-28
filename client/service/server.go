@@ -2,7 +2,9 @@ package service
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"github.com/flybits/gophercon2023/client/process"
 	"github.com/flybits/gophercon2023/server/pb"
 	"google.golang.org/grpc"
 	"io"
@@ -18,11 +20,12 @@ type (
 	server struct {
 		connection *grpc.ClientConn
 		grpcClient pb.ServerClient
+		broker     *process.Broker
 	}
 )
 
-func NewServerManager(address string) (ServerManager, error) {
-	log.Printf("Connecting to ctxrepo at %s", address)
+func NewServerManager(address string, broker *process.Broker) (ServerManager, error) {
+	log.Printf("Connecting to server at %s", address)
 
 	conn, err := grpc.Dial(
 		address,
@@ -35,6 +38,7 @@ func NewServerManager(address string) (ServerManager, error) {
 	return &server{
 		connection: conn,
 		grpcClient: pb.NewServerClient(conn),
+		broker:     broker,
 	}, nil
 }
 
@@ -52,6 +56,24 @@ func (s *server) GetStreamFromServer(ctx context.Context, offset int32) error {
 		}
 	}()
 
+	// send a sample rabbitmq message for testing
+	bubu := struct {
+		Bubu string `json:"bubu"`
+	}{
+		Bubu: "arman",
+	}
+	b, err := json.Marshal(bubu)
+	if err != nil {
+		log.Printf("error happened when marshaling: %v", err)
+	}
+	publish := process.PublishWithDefaults("client", "routingKey", b)
+	err = s.broker.Publish(ctx, publish)
+
+	if err != nil {
+		log.Printf("error when publishing: %v", err)
+	}
+
+	// make request for streaming
 	request := &pb.DataRequest{
 		Offset: offset,
 	}
