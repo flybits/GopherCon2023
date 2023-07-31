@@ -1,5 +1,7 @@
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
+github.com/flybits/gophercon2023/amqp v0.0.0-20230731160652-b9a221066dc2 h1:Ld6M8KkzuJfymZNz4sU9e5eX/Wc3XVRmy2ovEiyL4kc=
+github.com/flybits/gophercon2023/amqp v0.0.0-20230731160652-b9a221066dc2/go.mod h1:Xf/X0PttUbUI4BYoiMVEuVDsZr4sKQFFvRzmcMZ5BFY=
 github.com/flybits/gophercon2023/server v0.0.0-20230615160103-25ef6e93ea5f h1:clq9upkkQGrYV8g1xxLtOosjSTuR1shkeI37ypjU5HQ=
 github.com/flybits/gophercon2023/server v0.0.0-20230615160103-25ef6e93ea5f/go.mod h1:CnymMnbm2+8pBIRDnxUwi9HtKssAEfV2/PTrYLAi1qU=
 github.com/golang/protobuf v1.5.0/go.mod h1:FsONVRAS9T7sI+LIUmWTfcYkHO4aIWwzhcaSAoJOfIk=

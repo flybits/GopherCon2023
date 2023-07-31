@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/flybits/gophercon2023/client/process"
+	"github.com/flybits/gophercon2023/amqp"
 	"github.com/flybits/gophercon2023/server/pb"
 	"google.golang.org/grpc"
 	"io"
@@ -20,11 +20,11 @@ type (
 	server struct {
 		connection *grpc.ClientConn
 		grpcClient pb.ServerClient
-		broker     *process.Broker
+		broker     *amqp.Broker
 	}
 )
 
-func NewServerManager(address string, broker *process.Broker) (ServerManager, error) {
+func NewServerManager(address string, broker *amqp.Broker) (ServerManager, error) {
 	log.Printf("Connecting to server at %s", address)
 
 	conn, err := grpc.Dial(
@@ -66,7 +66,7 @@ func (s *server) GetStreamFromServer(ctx context.Context, offset int32) error {
 	if err != nil {
 		log.Printf("error happened when marshaling: %v", err)
 	}
-	publish := process.PublishWithDefaults("client", "routingKey", b)
+	publish := amqp.PublishWithDefaults("client", "routingKey", b)
 	err = s.broker.Publish(ctx, publish)
 
 	if err != nil {

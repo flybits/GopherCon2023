@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"github.com/flybits/gophercon2023/amqp"
 	"github.com/flybits/gophercon2023/client/cmd/config"
 	"github.com/flybits/gophercon2023/client/handler"
 	"github.com/flybits/gophercon2023/client/process"
@@ -19,28 +20,28 @@ func main() {
 	var err error
 
 	p := process.NewProcess()
-	broker := process.Broker{}
-	err = broker.SetupBroker([]process.Exchange{
-		process.ExchangeWithDefaults("client", ""),
-	}, []process.Queue{
+	broker := amqp.Broker{}
+	err = broker.SetupBroker([]amqp.Exchange{
+		amqp.ExchangeWithDefaults("client", ""),
+	}, []amqp.Queue{
 		{
 			Name:       "client",
 			Durable:    true,
 			AutoDelete: false,
 			Exclusive:  false,
 			NoWait:     false,
-			Bindings: []process.Binding{
-				process.BindingWithDefaults("routingKey", "client"),
+			Bindings: []amqp.Binding{
+				amqp.BindingWithDefaults("routingKey", "client"),
 			},
-			Consumers: []process.Consumer{
-				process.ConsumerWithDefaults(false, p.ProcessAMQPMsg),
+			Consumers: []amqp.Consumer{
+				amqp.ConsumerWithDefaults(false, p.ProcessAMQPMsg),
 			},
 		},
 	},
-		process.URIScheme(config.Global.RabbitmqScheme),
-		process.Address(config.Global.RabbitmqAddress, config.Global.RabbitmqPort),
-		process.Credentials(config.Global.RabbitmqUsername, config.Global.RabbitmqPassword),
-		process.Vhost(config.Global.RabbitmqVhost))
+		amqp.URIScheme(config.Global.RabbitmqScheme),
+		amqp.Address(config.Global.RabbitmqAddress, config.Global.RabbitmqPort),
+		amqp.Credentials(config.Global.RabbitmqUsername, config.Global.RabbitmqPassword),
+		amqp.Vhost(config.Global.RabbitmqVhost))
 
 	if err != nil {
 		log.Printf("error when connecting to rabbitmq server: %v", err)
