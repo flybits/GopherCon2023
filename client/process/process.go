@@ -2,6 +2,7 @@ package process
 
 import (
 	"context"
+	"github.com/flybits/gophercon2023/amqp"
 	"log"
 )
 
@@ -13,7 +14,7 @@ func NewProcess() *Process {
 	return &Process{}
 }
 
-func (p *Process) ProcessAMQPMsg(ctx context.Context, d Delivery) (err error) {
+func (p *Process) ProcessAMQPMsg(ctx context.Context, d amqp.Delivery) (err error) {
 	log.Printf("received message %v", string(d.Body))
 	return err
 }
