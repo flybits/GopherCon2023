@@ -6,7 +6,11 @@ import (
 	"github.com/flybits/gophercon2023/client/cmd/config"
 	"github.com/flybits/gophercon2023/client/handler"
 	"github.com/flybits/gophercon2023/client/process"
-	"github.com/flybits/gophercon2023/client/service"
+	"github.com/flybits/gophercon2023/client/watcher"
+	"k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/rest"
 	"log"
 	"net/http"
 	"os"
@@ -48,13 +52,77 @@ func main() {
 		log.Println("connected to rabbitmq server")
 	}
 
-	sm, err := service.NewServerManager("server:8001", &broker)
+	/*
+			kubeconfig := `apiVersion: v1
+		kind: Config
+		clusters:
+		- name: "eks-development"
+		  cluster:
+		    server: "https://new-rancher.flybits.tools/k8s/clusters/c-m-ncwjc5pj"
+		users:
+		- name: "eks-development"
+		  user:
+		    token: "kubeconfig-u-6kt6lzlg2nwx6nq:xc987k72s9px4dptvsvjls64xzhcblqj6mlclwgvbrkwdlkppmhdd7"
+		contexts:
+		- name: "eks-development"
+		  context:
+		    user: "eks-development"
+		    cluster: "eks-development"
+		    namespace: "development"
+		current-context: "eks-development"
+		`
+			client, err := k8sutils.NewKubeClient(kubeconfig)
+			if err != nil {
+				klog.Fatal(err)
+			}
+
+			eventCh := make(chan *watcher.ContainerRestartEvent)
+			stopCh := make(chan struct{})
+
+			listen(client, eventCh, stopCh)
+			go processRestartEvents(eventCh)
+	*/
+
+	// creates the in-cluster config
+	conf, err := rest.InClusterConfig()
 	if err != nil {
-		log.Printf("error when connecting to server grpc:%v", err)
+		panic(err.Error())
 	}
+	// creates the clientset
+	clientset, err := kubernetes.NewForConfig(conf)
+	if err != nil {
+		panic(err.Error())
+	}
+
+	time.Sleep(10 * time.Second)
+
+	// get pods in all the namespaces by omitting namespace
+	// Or specify namespace to get pods in particular namespace
+	pods, err := clientset.CoreV1().Pods("").List(context.TODO(), metav1.ListOptions{})
+	if err != nil {
+		panic(err.Error())
+	}
+	fmt.Printf("There are %d pods in the cluster\n", len(pods.Items))
+
+	// Examples for error handling:
+	// - Use helper functions e.g. errors.IsNotFound()
+	// - And/or cast to StatusError and use its properties like e.g. ErrStatus.Message
+	_, err = clientset.CoreV1().Pods("default").Get(context.TODO(), "example-xxxxx", metav1.GetOptions{})
+	if errors.IsNotFound(err) {
+		fmt.Printf("Pod example-xxxxx not found in default namespace\n")
+	} else if statusError, isStatus := err.(*errors.StatusError); isStatus {
+		fmt.Printf("Error getting pod %v\n", statusError.ErrStatus.Message)
+	} else if err != nil {
+		panic(err.Error())
+	} else {
+		fmt.Printf("Found example-xxxxx pod in default namespace\n")
+	}
+
+	time.Sleep(10 * time.Second)
+
 	log.Printf("Starting HTTP server ...")
 
-	h := handler.NewHandler(sm)
+	h := handler.NewHandler()
 	router := handler.NewRouter(h)
 	httpServer := &http.Server{
 		Addr:      ":8000",
@@ -86,4 +154,19 @@ func main() {
 	}
 
 	log.Printf("Exiting...")
+}
+
+func listen(client *kubernetes.Clientset, eventCh chan *watcher.ContainerRestartEvent, stopCh chan struct{}) {
+	watcher := watcher.NewPodWatcher(client, eventCh)
+
+	err := watcher.Run(stopCh)
+	if err != nil {
+		log.Printf(" error in listen %v", err)
+	}
+}
+
+func processRestartEvents(eventCh chan *watcher.ContainerRestartEvent) {
+	for event := range eventCh {
+		log.Printf("event from k8s: %+v", event)
+	}
 }

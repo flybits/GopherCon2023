@@ -1,18 +1,14 @@
 package handler
 
 import (
-	"github.com/flybits/gophercon2023/client/service"
 	"github.com/gorilla/mux"
 )
 
 type Handler struct {
-	ServiceManager service.ServerManager
 }
 
-func NewHandler(sm service.ServerManager) *Handler {
-	return &Handler{
-		ServiceManager: sm,
-	}
+func NewHandler() *Handler {
+	return &Handler{}
 }
 
 // NewRouter returns a new router object for the specified routes.

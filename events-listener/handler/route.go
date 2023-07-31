@@ -1,8 +1,6 @@
 package handler
 
 import (
-	"context"
-	"log"
 	"net/http"
 )
 
@@ -41,12 +39,6 @@ func (h *Handler) CheckHealth(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handler) Start(w http.ResponseWriter, r *http.Request) {
 
-	go func() {
-		err := h.ServiceManager.GetStreamFromServer(context.Background(), 0)
-		if err != nil {
-			log.Printf("error happened: %v", err)
-		}
-	}()
 	w.Header().Set("Content-Type", "application/text; charset=UTF-8")
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte("stream started"))

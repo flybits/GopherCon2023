@@ -1,0 +1,26 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: events-listener
+  labels:
+    app: events-listener
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: events-listener
+  template:
+    metadata:
+      labels:
+        app: events-listener
+    spec:
+      containers:
+        - name: events-listener
+          image: armanmasoumi/gophercon-events-listener:2
+          ports:
+            - name: http
+              containerPort: 8000
+              protocol: TCP
+            - name: grpc
+              containerPort: 8001
+              protocol: TCP
