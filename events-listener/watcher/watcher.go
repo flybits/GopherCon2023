@@ -6,6 +6,7 @@ import (
 	coreinformers "k8s.io/client-go/informers/core/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
+	"log"
 	"time"
 )
 
@@ -38,11 +39,15 @@ func NewPodWatcher(client *kubernetes.Clientset, eventCh chan *ContainerRestartE
 		podInformer:     podInformer,
 		eventCh:         eventCh,
 	}
-	podInformer.Informer().AddEventHandler(
+	_, err := podInformer.Informer().AddEventHandler(
 		cache.ResourceEventHandlerFuncs{
 			UpdateFunc: podWatcher.podUpdate,
 		},
 	)
+
+	if err != nil {
+		log.Printf("error in adding event handler: ", err.Error())
+	}
 
 	return podWatcher
 }

@@ -28,6 +28,12 @@ func (h *Handler) GetRoutes() []Route {
 			Pattern:     "/start",
 			HandlerFunc: h.Start,
 		},
+		{
+			Name:        "OOM",
+			Method:      "GET",
+			Pattern:     "/oom",
+			HandlerFunc: h.OOM,
+		},
 	}
 
 }
@@ -47,6 +53,20 @@ func (h *Handler) Start(w http.ResponseWriter, r *http.Request) {
 			log.Printf("error happened: %v", err)
 		}
 	}()
+	w.Header().Set("Content-Type", "application/text; charset=UTF-8")
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte("stream started"))
+	return
+}
+
+func (h *Handler) OOM(w http.ResponseWriter, r *http.Request) {
+
+	// causing intentional OOM
+	size := 10000000000000
+	bubu := make([]int64, size)
+	for i := 0; i < size; i++ {
+		bubu[i] = 12233445566677777
+	}
 	w.Header().Set("Content-Type", "application/text; charset=UTF-8")
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte("stream started"))

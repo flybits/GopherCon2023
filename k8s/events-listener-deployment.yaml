@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
         - name: events-listener
-          image: armanmasoumi/gophercon-events-listener:2
+          image: armanmasoumi/gophercon-events-listener:4
           ports:
             - name: http
               containerPort: 8000
