@@ -11,9 +11,9 @@ var Global = struct {
 }{
 
 	RabbitmqScheme:   "amqp",
-	RabbitmqUsername: "default_user_4F1GftH2GNUMLxisw07",
-	RabbitmqPassword: "_Ltm36EgSPXLseoIUwkLcRAYEQh7fGbj",
-	RabbitmqAddress:  "definition.test-rabbitmq.svc",
+	RabbitmqUsername: "",
+	RabbitmqPassword: "",
+	RabbitmqAddress:  "",
 	RabbitmqPort:     5672,
 	RabbitmqVhost:    "/",
 }

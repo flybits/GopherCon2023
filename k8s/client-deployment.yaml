@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
         - name: client
-          image: armanmasoumi/gophercon-client:13
+          image: armanmasoumi/gophercon-client:16
           ports:
             - name: http
               containerPort: 8000
@@ -24,3 +24,35 @@ spec:
             - name: grpc
               containerPort: 8001
               protocol: TCP
+          env:
+            - name: CONFIG_POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: CONFI_POD_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: CONFIG_POD_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.podIP
+            - name: NODE_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.hostIP
+          volumeMounts:
+            - mountPath: /etc/rabbitmq-admin
+              name: rabbitmq-admin
+              readOnly: true
+          resources:
+            requests:
+              cpu: 0.1
+              memory: "100Mi"
+            limits:
+              cpu: 0.5
+              memory: "100Mi"
+      volumes:
+        - name: rabbitmq-admin
+          secret:
+            secretName: rabbitmq-admin

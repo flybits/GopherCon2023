@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
         - name: events-listener
-          image: armanmasoumi/gophercon-events-listener:4
+          image: armanmasoumi/gophercon-events-listener:5
           ports:
             - name: http
               containerPort: 8000
@@ -24,3 +24,18 @@ spec:
             - name: grpc
               containerPort: 8001
               protocol: TCP
+          volumeMounts:
+            - mountPath: /etc/rabbitmq-admin
+              name: rabbitmq-admin
+              readOnly: true
+          resources:
+            requests:
+              cpu: 0.1
+              memory: "100Mi"
+            limits:
+              cpu: 0.5
+              memory: "100Mi"
+      volumes:
+        - name: rabbitmq-admin
+          secret:
+            secretName: rabbitmq-admin

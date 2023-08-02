@@ -19,6 +19,10 @@ import (
 func main() {
 	var err error
 
+	err = setRabbitCreds()
+	if err != nil {
+		log.Printf("error setting rabbit credentials: %v", err)
+	}
 	p := process.NewProcess()
 	broker := amqp.Broker{}
 	err = broker.SetupBroker([]amqp.Exchange{
@@ -87,4 +91,25 @@ func main() {
 	}
 
 	log.Printf("Exiting...")
+}
+
+func setRabbitCreds() error {
+	passb, err := os.ReadFile("/etc/rabbitmq-admin/pass")
+	if err != nil {
+		return err
+	}
+	userb, err := os.ReadFile("/etc/rabbitmq-admin/user")
+	if err != nil {
+		return err
+	}
+
+	addressb, err := os.ReadFile("/etc/rabbitmq-admin/address")
+	if err != nil {
+		return err
+	}
+	config.Global.RabbitmqUsername = string(userb)
+	config.Global.RabbitmqPassword = string(passb)
+	config.Global.RabbitmqAddress = string(addressb)
+
+	return nil
 }
