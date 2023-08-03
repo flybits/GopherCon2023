@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/flybits/gophercon2023/amqp"
 	"github.com/flybits/gophercon2023/client/cmd/config"
+	"github.com/flybits/gophercon2023/client/db"
 	"github.com/flybits/gophercon2023/client/handler"
 	"github.com/flybits/gophercon2023/client/process"
 	"github.com/flybits/gophercon2023/client/service"
@@ -53,10 +54,19 @@ func main() {
 		log.Println("connected to rabbitmq server")
 	}
 
-	sm, err := service.NewServerManager("server:8001", &broker)
+	podName := os.Getenv("CONFIG_POD_NAME")
+	log.Printf("the pod name is %v", podName)
+
+	db, err := db.NewMongoDb()
+	if err != nil {
+		log.Printf("failed to connect to mongodb: %v", err)
+	}
+
+	sm, err := service.NewServerManager("server:8001", &broker, db)
 	if err != nil {
 		log.Printf("error when connecting to server grpc:%v", err)
 	}
+
 	log.Printf("Starting HTTP server ...")
 
 	h := handler.NewHandler(sm)

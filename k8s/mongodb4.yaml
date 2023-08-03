@@ -1,0 +1,66 @@
+#
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: mongodb4-pvc
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: mongodb4
+spec:
+  serviceName: mongodb4
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mongodb4
+  template:
+    metadata:
+      labels:
+        app: mongodb4
+    spec:
+      containers:
+        - name: mongodb4
+          image: mongo:4.0.12
+          volumeMounts:
+            - mountPath: "/data/db"
+              name: mongodb4-volume
+          resources:
+            requests:
+              cpu: 0.2
+              memory: "200Mi"
+            limits:
+              cpu: 0.5
+              memory: "400Mi"
+          ports:
+            - containerPort: 27017
+              name: default
+          env:
+            - name: MONGO_INITDB_ROOT_USERNAME
+              value: "demo"
+            - name: MONGO_INITDB_ROOT_PASSWORD
+              value: "demo"
+      volumes:
+        - name: mongodb4-volume
+          persistentVolumeClaim:
+            claimName: mongodb4-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mongodb4
+  labels:
+    app: mongodb4
+spec:
+  ports:
+    - name: mongodb4
+      port: 27017
+  selector:
+    app: mongodb4

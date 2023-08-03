@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/flybits/gophercon2023/amqp"
+	"github.com/flybits/gophercon2023/client/db"
 	"github.com/flybits/gophercon2023/server/pb"
 	"google.golang.org/grpc"
 	"io"
@@ -21,10 +22,11 @@ type (
 		connection *grpc.ClientConn
 		grpcClient pb.ServerClient
 		broker     *amqp.Broker
+		db         *db.Db
 	}
 )
 
-func NewServerManager(address string, broker *amqp.Broker) (ServerManager, error) {
+func NewServerManager(address string, broker *amqp.Broker, db *db.Db) (ServerManager, error) {
 	log.Printf("Connecting to server at %s", address)
 
 	conn, err := grpc.Dial(
@@ -39,6 +41,7 @@ func NewServerManager(address string, broker *amqp.Broker) (ServerManager, error
 		connection: conn,
 		grpcClient: pb.NewServerClient(conn),
 		broker:     broker,
+		db:         db,
 	}, nil
 }
 
