@@ -27,16 +27,16 @@ func main() {
 	p := process.NewProcess()
 	broker := amqp.Broker{}
 	err = broker.SetupBroker([]amqp.Exchange{
-		amqp.ExchangeWithDefaults("client", ""),
+		amqp.ExchangeWithDefaults("events-listener", ""),
 	}, []amqp.Queue{
 		{
-			Name:       "client",
+			Name:       "oom",
 			Durable:    true,
 			AutoDelete: false,
 			Exclusive:  false,
 			NoWait:     false,
 			Bindings: []amqp.Binding{
-				amqp.BindingWithDefaults("routingKey", "client"),
+				amqp.BindingWithDefaults("oom", "events-listener"),
 			},
 			Consumers: []amqp.Consumer{
 				amqp.ConsumerWithDefaults(false, p.ProcessAMQPMsg),

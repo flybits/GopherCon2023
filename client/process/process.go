@@ -16,5 +16,6 @@ func NewProcess() *Process {
 
 func (p *Process) ProcessAMQPMsg(ctx context.Context, d amqp.Delivery) (err error) {
 	log.Printf("received message %v", string(d.Body))
+
 	return err
 }

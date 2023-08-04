@@ -2,7 +2,6 @@ package service
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"github.com/flybits/gophercon2023/amqp"
 	"github.com/flybits/gophercon2023/client/db"
@@ -59,23 +58,31 @@ func (s *server) GetStreamFromServer(ctx context.Context, offset int32) error {
 		}
 	}()
 
-	// send a sample rabbitmq message for testing
-	bubu := struct {
-		Bubu string `json:"bubu"`
-	}{
-		Bubu: "arman",
-	}
-	b, err := json.Marshal(bubu)
-	if err != nil {
-		log.Printf("error happened when marshaling: %v", err)
-	}
-	publish := amqp.PublishWithDefaults("client", "routingKey", b)
-	err = s.broker.Publish(ctx, publish)
+	_, err := s.db.UpsertStreamMetadata(ctx, db.StreamMetadata{
+		Offset: offset,
+	})
 
 	if err != nil {
-		log.Printf("error when publishing: %v", err)
+		log.Printf("error inserting stream metadata")
 	}
+	/*
+		// send a sample rabbitmq message for testing
+		bubu := struct {
+			Bubu string `json:"bubu"`
+		}{
+			Bubu: "arman",
+		}
+		b, err := json.Marshal(bubu)
+		if err != nil {
+			log.Printf("error happened when marshaling: %v", err)
+		}
+		publish := amqp.PublishWithDefaults("client", "routingKey", b)
+		err = s.broker.Publish(ctx, publish)
 
+		if err != nil {
+			log.Printf("error when publishing: %v", err)
+		}
+	*/
 	// make request for streaming
 	request := &pb.DataRequest{
 		Offset: offset,

@@ -3,11 +3,14 @@ package db
 import (
 	"context"
 	"github.com/flybits/gophercon2023/client/cmd/config"
+	"github.com/google/uuid"
 	"go.elastic.co/apm/module/apmmongo/v2"
+	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.mongodb.org/mongo-driver/mongo/readpref"
 	"log"
+	"os"
 	"strings"
 	"time"
 )
@@ -70,4 +73,25 @@ func (Db *Db) Disconnect(ctx context.Context) error {
 	}
 
 	return nil
+}
+
+type StreamMetadata struct {
+	ID      string `json:"id" bson:"_id"`
+	Offset  int32  `json:"offset" bson:"offset"`
+	PodName string `json:"podName" bson:"podName"`
+}
+
+func (d *Db) UpsertStreamMetadata(ctx context.Context, sm StreamMetadata) (StreamMetadata, error) {
+
+	podName := os.Getenv("CONFIG_POD_NAME")
+	if len(sm.ID) < 1 {
+		sm.ID = uuid.New().String()
+	}
+
+	sm.PodName = podName
+	query := bson.M{"_id": bson.M{"$eq": sm.ID}}
+	update := bson.M{"$set": sm}
+	ops := options.Update().SetUpsert(true)
+	_, err := d.client.Database("client").Collection("streams").UpdateOne(ctx, query, update, ops)
+	return sm, err
 }

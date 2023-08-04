@@ -2,10 +2,11 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"github.com/flybits/gophercon2023/amqp"
 	"github.com/flybits/gophercon2023/client/cmd/config"
 	"github.com/flybits/gophercon2023/client/handler"
-	"github.com/flybits/gophercon2023/client/process"
 	"github.com/flybits/gophercon2023/client/watcher"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -13,6 +14,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 )
@@ -25,29 +27,29 @@ func main() {
 		log.Printf("error setting rabbit credentials: %v", err)
 	}
 
-	p := process.NewProcess()
-	broker := process.Broker{}
-	err = broker.SetupBroker([]process.Exchange{
-		process.ExchangeWithDefaults("client", ""),
-	}, []process.Queue{
-		{
+	//p := process.NewProcess()
+	broker := amqp.Broker{}
+	err = broker.SetupBroker([]amqp.Exchange{
+		amqp.ExchangeWithDefaults("events-listener", ""),
+	}, []amqp.Queue{
+		/*{
 			Name:       "client",
 			Durable:    true,
 			AutoDelete: false,
 			Exclusive:  false,
 			NoWait:     false,
-			Bindings: []process.Binding{
-				process.BindingWithDefaults("routingKey", "client"),
+			Bindings: []amqp.Binding{
+				amqp.BindingWithDefaults("oom", "client"),
 			},
-			Consumers: []process.Consumer{
-				process.ConsumerWithDefaults(false, p.ProcessAMQPMsg),
+			Consumers: []amqp.Consumer{
+				amqp.ConsumerWithDefaults(false, p.ProcessAMQPMsg),
 			},
-		},
+		},*/
 	},
-		process.URIScheme(config.Global.RabbitmqScheme),
-		process.Address(config.Global.RabbitmqAddress, config.Global.RabbitmqPort),
-		process.Credentials(config.Global.RabbitmqUsername, config.Global.RabbitmqPassword),
-		process.Vhost(config.Global.RabbitmqVhost))
+		amqp.URIScheme(config.Global.RabbitmqScheme),
+		amqp.Address(config.Global.RabbitmqAddress, config.Global.RabbitmqPort),
+		amqp.Credentials(config.Global.RabbitmqUsername, config.Global.RabbitmqPassword),
+		amqp.Vhost(config.Global.RabbitmqVhost))
 
 	if err != nil {
 		log.Printf("error when connecting to rabbitmq server: %v", err)
@@ -97,7 +99,7 @@ func main() {
 	stopCh := make(chan struct{})
 
 	listen(clientset, eventCh, stopCh)
-	go processRestartEvents(eventCh)
+	go processRestartEvents(eventCh, &broker)
 	/*
 		time.Sleep(10 * time.Second)
 
@@ -170,9 +172,20 @@ func listen(client *kubernetes.Clientset, eventCh chan *watcher.ContainerRestart
 	}
 }
 
-func processRestartEvents(eventCh chan *watcher.ContainerRestartEvent) {
+func processRestartEvents(eventCh chan *watcher.ContainerRestartEvent, broker *amqp.Broker) {
 	for event := range eventCh {
 		log.Printf("event from k8s: %+v", event)
+		if strings.Contains(event.Reason, "OOM") {
+			b, err := json.Marshal(event)
+			if err != nil {
+				log.Printf("error marshaling event: %v this event %v", err, event)
+			}
+			publish := amqp.PublishWithDefaults("events-listener", "oom", b)
+			err = broker.Publish(context.Background(), publish)
+			if err != nil {
+				log.Printf("error publishing oom event %v", err)
+			}
+		}
 	}
 }
 
