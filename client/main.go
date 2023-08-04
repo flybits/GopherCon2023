@@ -24,8 +24,22 @@ func main() {
 	if err != nil {
 		log.Printf("error setting rabbit credentials: %v", err)
 	}
-	p := process.NewProcess()
+
+	database, err := db.NewMongoDb()
+	if err != nil {
+		log.Printf("failed to connect to mongodb: %v", err)
+	}
+
+	podName := os.Getenv("CONFIG_POD_NAME")
+	log.Printf("the pod name is %v", podName)
+
 	broker := amqp.Broker{}
+	sm, err := service.NewServerManager("server:8001", &broker, database)
+	if err != nil {
+		log.Printf("error when connecting to server grpc:%v", err)
+	}
+
+	p := process.NewProcess(database, sm)
 	err = broker.SetupBroker([]amqp.Exchange{
 		amqp.ExchangeWithDefaults("events-listener", ""),
 	}, []amqp.Queue{
@@ -52,19 +66,6 @@ func main() {
 		log.Printf("error when connecting to rabbitmq server: %v", err)
 	} else {
 		log.Println("connected to rabbitmq server")
-	}
-
-	podName := os.Getenv("CONFIG_POD_NAME")
-	log.Printf("the pod name is %v", podName)
-
-	db, err := db.NewMongoDb()
-	if err != nil {
-		log.Printf("failed to connect to mongodb: %v", err)
-	}
-
-	sm, err := service.NewServerManager("server:8001", &broker, db)
-	if err != nil {
-		log.Printf("error when connecting to server grpc:%v", err)
 	}
 
 	log.Printf("Starting HTTP server ...")

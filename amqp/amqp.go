@@ -110,6 +110,11 @@ type HandlerFunc func(context.Context, Delivery) error
 // Delivery is same as amqp.Delivery, so consumers of this package do not need to import amqp package too
 type Delivery amqp.Delivery
 
+// Ack is same as amqp.Ack
+func (d Delivery) Ack(multiple bool) error {
+	return amqp.Delivery(d).Ack(multiple)
+}
+
 // Binding is an AMQP binding between a queue and an exchange
 type Binding struct {
 	Key      string

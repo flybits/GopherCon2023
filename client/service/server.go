@@ -58,7 +58,7 @@ func (s *server) GetStreamFromServer(ctx context.Context, offset int32) error {
 		}
 	}()
 
-	_, err := s.db.UpsertStreamMetadata(ctx, db.StreamMetadata{
+	sm, err := s.db.UpsertStreamMetadata(ctx, db.StreamMetadata{
 		Offset: offset,
 	})
 
@@ -106,7 +106,7 @@ func (s *server) GetStreamFromServer(ctx context.Context, offset int32) error {
 
 		log.Printf("received data: %v", data)
 
-		err = processData(data)
+		err = s.processData(data, sm.ID)
 		if err != nil {
 			log.Printf("error when processing data: %v", err)
 			continue
@@ -114,10 +114,14 @@ func (s *server) GetStreamFromServer(ctx context.Context, offset int32) error {
 
 		log.Printf("processed data %v", data)
 	}
-	return nil
+
+	// mark as completed
+	sm.Completed = true
+	_, err = s.db.UpsertStreamMetadata(ctx, sm)
+	return err
 }
 
-func processData(data *pb.Data) error {
+func (s *server) processData(data *pb.Data, streamID string) error {
 	if data.Value == 6 {
 		return fmt.Errorf("mock error")
 	}
@@ -126,5 +130,6 @@ func processData(data *pb.Data) error {
 		panic("oops panic")
 	}
 
-	return nil
+	err := s.db.UpsertData(context.Background(), data, streamID)
+	return err
 }
