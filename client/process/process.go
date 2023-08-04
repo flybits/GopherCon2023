@@ -66,7 +66,9 @@ func (p *Process) ProcessAMQPMsg(ctx context.Context, d amqp.Delivery) error {
 		}
 	}()
 
-	//d.ac
-
+	err = d.Ack(false)
+	if err != nil {
+		log.Printf("failed to acknowledge message")
+	}
 	return err
 }
