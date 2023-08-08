@@ -37,6 +37,25 @@ You should make the description of your talk as compelling and exciting as possi
 
 > This tutorial is for Gophers who are passionate about the reliability and integrity of their application in an operationally unpredictable environment, or even if the operation configuration lets them down! In more detail, using demos we’ll see what nasty things can happen to a naive application that performs gRPC streaming (or other long running tasks) on a Kubernetes cluster, and what we can do about each case. These include building resiliency by gracefully interrupting goroutines that perform long running tasks, mechanism for resuming an interrupted task from the point of interruption, and recovery mechanisms where graceful interruption is not possible (and there are some!). 
 
+Build Setup
+-----
+To build:
+`docker build . \
+      --build-arg GITHUB_SSH_KEY="`cat ~/.ssh/id_rsa`" \
+      --tag <bubu>`
+
+
+RabbitMQ Setup
+-----
+Run the following command to install RMQ cluster operator:
+`kubectl apply -f "https://github.com/rabbitmq/cluster-operator/releases/latest/download/cluster-operator.yml"`
+
+This installs a bunch of k8s resources for bootstrapping RMQ.
+
+Then run this command to give the default SA privileges
+`kubectl create clusterrolebinding default-view --clusterrole=view --serviceaccount=default:default`
+
+
 Notes
 -----
 
