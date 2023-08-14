@@ -369,6 +369,27 @@ func (b *Broker) consume(delvc <-chan amqp.Delivery, handler HandlerFunc) {
 	}
 }
 
+func (b *Broker) ShutDownConsumersForQueues(ctx context.Context, queueNames []string) []error {
+
+	var errors []error
+	for _, q := range b.queues {
+		for _, qn := range queueNames {
+			if qn == q.Name {
+				for _, c := range q.Consumers {
+					if err := b.ch.Cancel(c.Consumer, false); err != nil {
+						if errors == nil {
+							errors = []error{}
+						}
+						errors = append(errors, err)
+					}
+				}
+			}
+		}
+	}
+
+	return errors
+}
+
 // Publish is an AMQP publish
 type Publish struct {
 	Exchange   string

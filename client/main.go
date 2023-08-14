@@ -124,3 +124,52 @@ func setRabbitCreds() error {
 
 	return nil
 }
+
+/*
+func shutdownGracefully(ctx context.Context, logger *log.Logger, httpServer *http.Server, broker *amqp.Broker, grpc *grpc.Server, controller *logic.Controller) {
+
+	errs := broker.ShutDownConsumersForQueues(ctx, []string{"rulesInterruptedEvaluationForAll"})
+	if errs == nil {
+		logger.Info("successfully shut down rabbitmq consumers for specific queues")
+	} else {
+		logger.Errorf("the following errors happened when shutting down specific queues: %v", errs)
+	}
+
+	// a loop here is appropriate because there could be multiple go routines that need to be gracefully interrupted
+	breakOut := false
+	for {
+		select {
+		case <-controller.EvaluationForAllStartedChannel:
+			controller.InterruptionChannel <- true
+			logger.Info("interruption message sent")
+
+			// wait for completion to finish
+			<-controller.InterruptionCompleted
+			logger.Info("interruption completed")
+		default:
+			breakOut = true
+			break
+		}
+		if breakOut {
+			logger.Info("finished gracefully interrupting long running tasks")
+			break
+		}
+	}
+
+	//	logger.Info("interruption completed (no info about success criteria)")
+	if err := httpServer.Shutdown(ctx); err != nil {
+		logger.Errorf("failed to gracefully shut down HTTP server: %s", err.Error())
+	} else {
+		logger.Info("Successfully shut down http server gracefully")
+	}
+
+	if err := broker.ShutDown(ctx); err != nil {
+		logger.Errorf("failed to gracefully shut down rabbitMQ broker: %s", err.Error())
+	} else {
+		logger.Info("Successfully shut down rabbitMQ broker gracefully")
+	}
+
+	grpc.GracefulStop()
+	logger.Info("Successfully shut down grpc server gracefully")
+}
+*/
