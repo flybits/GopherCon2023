@@ -3,8 +3,8 @@ module github.com/flybits/gophercon2023/client
 go 1.19
 
 require (
-	github.com/flybits/gophercon2023/amqp v0.0.0-20230804221658-0dbf884dd0af
-	github.com/flybits/gophercon2023/server v0.0.0-20230804221658-0dbf884dd0af
+	github.com/flybits/gophercon2023/amqp v0.0.0-20230814170946-931b5e27dd56
+	github.com/flybits/gophercon2023/server v0.0.0-20230814170946-931b5e27dd56
 	github.com/google/uuid v1.3.0
 	github.com/gorilla/mux v1.8.0
 	go.elastic.co/apm/module/apmmongo/v2 v2.4.3

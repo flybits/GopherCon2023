@@ -1,12 +1,12 @@
 package main
 
 import (
-	"context"
 	"fmt"
 	"github.com/flybits/gophercon2023/amqp"
 	"github.com/flybits/gophercon2023/client/cmd/config"
 	"github.com/flybits/gophercon2023/client/db"
 	"github.com/flybits/gophercon2023/client/handler"
+	"github.com/flybits/gophercon2023/client/logic"
 	"github.com/flybits/gophercon2023/client/process"
 	"github.com/flybits/gophercon2023/client/service"
 	"log"
@@ -14,7 +14,6 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
-	"time"
 )
 
 func main() {
@@ -38,6 +37,8 @@ func main() {
 	if err != nil {
 		log.Printf("error when connecting to server grpc:%v", err)
 	}
+
+	c := logic.NewController(sm)
 
 	p := process.NewProcess(database, sm)
 	err = broker.SetupBroker([]amqp.Exchange{
@@ -70,7 +71,7 @@ func main() {
 
 	log.Printf("Starting HTTP server ...")
 
-	h := handler.NewHandler(sm)
+	h := handler.NewHandler(c)
 	router := handler.NewRouter(h)
 	httpServer := &http.Server{
 		Addr:      ":8000",
@@ -91,15 +92,8 @@ func main() {
 
 	log.Printf("Termination signal '%s' received, initiating graceful shutdown...", sig.String())
 
-	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(25)*time.Second)
-	defer cancel()
-
-	// shutdown the http and grpc servers
-	if err := httpServer.Shutdown(ctx); err != nil {
-		log.Printf("failed to gracefully shut down HTTP server: %s", err.Error())
-	} else {
-		log.Printf("Successfully shut down http server gracefully.")
-	}
+	//ctx, cancel := context.WithTimeout(context.Background(), time.Duration(25)*time.Second)
+	//defer cancel()
 
 	log.Printf("Exiting...")
 }
@@ -126,32 +120,32 @@ func setRabbitCreds() error {
 }
 
 /*
-func shutdownGracefully(ctx context.Context, logger *log.Logger, httpServer *http.Server, broker *amqp.Broker, grpc *grpc.Server, controller *logic.Controller) {
+func shutdownGracefully(ctx context.Context, httpServer *http.Server, broker *amqp.Broker, grpc *grpc.Server, controller *logic.Controller) {
 
+	// TODO: correct me
 	errs := broker.ShutDownConsumersForQueues(ctx, []string{"rulesInterruptedEvaluationForAll"})
 	if errs == nil {
-		logger.Info("successfully shut down rabbitmq consumers for specific queues")
+		log.Printf("successfully shut down rabbitmq consumers for specific queues")
 	} else {
-		logger.Errorf("the following errors happened when shutting down specific queues: %v", errs)
+		log.Printf("the following errors happened when shutting down specific queues: %v", errs)
 	}
 
 	// a loop here is appropriate because there could be multiple go routines that need to be gracefully interrupted
 	breakOut := false
 	for {
 		select {
-		case <-controller.EvaluationForAllStartedChannel:
+		case <-controller.StreamStartedChannel:
+			controller.WaitGroup.Add(1)
 			controller.InterruptionChannel <- true
-			logger.Info("interruption message sent")
+			log.Printf("interruption message sent")
 
-			// wait for completion to finish
-			<-controller.InterruptionCompleted
-			logger.Info("interruption completed")
+			controller.WaitGroup.Wait()
 		default:
 			breakOut = true
 			break
 		}
 		if breakOut {
-			logger.Info("finished gracefully interrupting long running tasks")
+			log.Printf("finished gracefully interrupting streaming")
 			break
 		}
 	}

@@ -1,17 +1,17 @@
 package handler
 
 import (
-	"github.com/flybits/gophercon2023/client/service"
+	"github.com/flybits/gophercon2023/client/logic"
 	"github.com/gorilla/mux"
 )
 
 type Handler struct {
-	ServiceManager service.ServerManager
+	controller logic.Controller
 }
 
-func NewHandler(sm service.ServerManager) *Handler {
+func NewHandler(c logic.Controller) *Handler {
 	return &Handler{
-		ServiceManager: sm,
+		c,
 	}
 }
 

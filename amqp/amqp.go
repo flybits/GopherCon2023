@@ -390,6 +390,51 @@ func (b *Broker) ShutDownConsumersForQueues(ctx context.Context, queueNames []st
 	return errors
 }
 
+// ShutDown gracefully shuts down message processing
+func (b *Broker) ShutDown(ctx context.Context) error {
+	done := make(chan int)
+
+	for _, q := range b.queues {
+		for _, c := range q.Consumers {
+			if err := b.ch.Cancel(c.Consumer, false); err != nil {
+				// log error but continue
+			}
+		}
+	}
+
+	go func() {
+		b.wg.Wait()
+		close(done)
+	}()
+
+	select {
+	case <-done:
+		// log completed
+	case <-ctx.Done():
+		// log context expired, closing connection and channel
+	}
+
+	if err := b.Close(); err != nil {
+		// log error closing connection
+		return err
+	}
+
+	return nil
+}
+
+// Close closes the AMQP channel and connection
+func (b *Broker) Close() error {
+	if err := b.ch.Close(); err != nil {
+		return err
+	}
+
+	if err := b.conn.Close(); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 // Publish is an AMQP publish
 type Publish struct {
 	Exchange   string

@@ -7,10 +7,10 @@ github.com/elastic/go-sysinfo v1.7.1 h1:Wx4DSARcKLllpKT2TnFVdSUJOsybqMYCNQZq1/wO
 github.com/elastic/go-sysinfo v1.7.1/go.mod h1:i1ZYdU10oLNfRzq4vq62BEwD2fH8KaWh6eh0ikPT9F0=
 github.com/elastic/go-windows v1.0.0 h1:qLURgZFkkrYyTTkvYpsZIgf83AUsdIHfvlJaqaZ7aSY=
 github.com/elastic/go-windows v1.0.0/go.mod h1:TsU0Nrp7/y3+VwE82FoZF8gC/XFg/Elz6CcloAxnPgU=
-github.com/flybits/gophercon2023/amqp v0.0.0-20230804221658-0dbf884dd0af h1:7+vOiFd1Aqh6HjvVoA+fWphqdhGab8i9IPEKn37rtec=
-github.com/flybits/gophercon2023/amqp v0.0.0-20230804221658-0dbf884dd0af/go.mod h1:Xf/X0PttUbUI4BYoiMVEuVDsZr4sKQFFvRzmcMZ5BFY=
-github.com/flybits/gophercon2023/server v0.0.0-20230804221658-0dbf884dd0af h1:S6B7VxhGtdv8a5EltxJhB48kQWhc6ziCjsVR/sS4Zpk=
-github.com/flybits/gophercon2023/server v0.0.0-20230804221658-0dbf884dd0af/go.mod h1:CnymMnbm2+8pBIRDnxUwi9HtKssAEfV2/PTrYLAi1qU=
+github.com/flybits/gophercon2023/amqp v0.0.0-20230814170946-931b5e27dd56 h1:0PxiiXIg+E6HcdlJ42Voq2QImA1I11SUhvnEECI2a4s=
+github.com/flybits/gophercon2023/amqp v0.0.0-20230814170946-931b5e27dd56/go.mod h1:Xf/X0PttUbUI4BYoiMVEuVDsZr4sKQFFvRzmcMZ5BFY=
+github.com/flybits/gophercon2023/server v0.0.0-20230814170946-931b5e27dd56 h1:NUfkVMHN0mIQctlAvYvzAWu/7OQYW748KUf/yILEB/k=
+github.com/flybits/gophercon2023/server v0.0.0-20230814170946-931b5e27dd56/go.mod h1:CnymMnbm2+8pBIRDnxUwi9HtKssAEfV2/PTrYLAi1qU=
 github.com/golang/protobuf v1.5.0/go.mod h1:FsONVRAS9T7sI+LIUmWTfcYkHO4aIWwzhcaSAoJOfIk=
 github.com/golang/protobuf v1.5.3 h1:KhyjKVUg7Usr/dYsdSqoFveMYd5ko72D+zANwlG1mmg=
 github.com/golang/protobuf v1.5.3/go.mod h1:XVQd3VNwM+JqD3oG2Ue2ip4fOMUkwXdXDdiuN0vRsmY=
