@@ -79,10 +79,11 @@ func (Db *Db) Disconnect(ctx context.Context) error {
 }
 
 type StreamMetadata struct {
-	ID        string `json:"id" bson:"_id"`
-	Offset    int32  `json:"offset" bson:"offset"`
-	PodName   string `json:"podName" bson:"podName"`
-	Completed bool   `json:"completed" bson:"completed"`
+	ID                 string `json:"id" bson:"_id"`
+	Offset             int32  `json:"offset" bson:"offset"`
+	PodName            string `json:"podName" bson:"podName"`
+	Completed          bool   `json:"completed" bson:"completed"`
+	LastUserIDStreamed string `json:"lastUserIDStreamed" bson:"lastUserIDStreamed"`
 }
 
 type Data struct {

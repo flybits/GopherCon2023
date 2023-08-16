@@ -6,10 +6,10 @@ import (
 )
 
 type Handler struct {
-	controller logic.Controller
+	controller *logic.Controller
 }
 
-func NewHandler(c logic.Controller) *Handler {
+func NewHandler(c *logic.Controller) *Handler {
 	return &Handler{
 		c,
 	}

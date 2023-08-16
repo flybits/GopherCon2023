@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"github.com/flybits/gophercon2023/amqp"
 	"github.com/flybits/gophercon2023/client/cmd/config"
@@ -14,6 +15,7 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 )
 
 func main() {
@@ -33,16 +35,17 @@ func main() {
 	log.Printf("the pod name is %v", podName)
 
 	broker := amqp.Broker{}
-	sm, err := service.NewServerManager("server:8001", &broker, database)
+	sm, err := service.NewServerManager("server:8001")
 	if err != nil {
 		log.Printf("error when connecting to server grpc:%v", err)
 	}
 
-	c := logic.NewController(sm)
+	c := logic.NewController(sm, &broker, database)
 
-	p := process.NewProcess(database, sm)
+	p := process.NewProcess(database, &c)
 	err = broker.SetupBroker([]amqp.Exchange{
 		amqp.ExchangeWithDefaults("events-listener", ""),
+		amqp.ExchangeWithDefaults("client", ""),
 	}, []amqp.Queue{
 		{
 			Name:       "oom",
@@ -52,6 +55,19 @@ func main() {
 			NoWait:     false,
 			Bindings: []amqp.Binding{
 				amqp.BindingWithDefaults("oom", "events-listener"),
+			},
+			Consumers: []amqp.Consumer{
+				amqp.ConsumerWithDefaults(false, p.ProcessAMQPMsg),
+			},
+		},
+		{
+			Name:       "interrupted",
+			Durable:    true,
+			AutoDelete: false,
+			Exclusive:  false,
+			NoWait:     false,
+			Bindings: []amqp.Binding{
+				amqp.BindingWithDefaults("interrupted", "client"),
 			},
 			Consumers: []amqp.Consumer{
 				amqp.ConsumerWithDefaults(false, p.ProcessAMQPMsg),
@@ -71,7 +87,7 @@ func main() {
 
 	log.Printf("Starting HTTP server ...")
 
-	h := handler.NewHandler(c)
+	h := handler.NewHandler(&c)
 	router := handler.NewRouter(h)
 	httpServer := &http.Server{
 		Addr:      ":8000",
@@ -92,9 +108,9 @@ func main() {
 
 	log.Printf("Termination signal '%s' received, initiating graceful shutdown...", sig.String())
 
-	//ctx, cancel := context.WithTimeout(context.Background(), time.Duration(25)*time.Second)
-	//defer cancel()
-
+	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(25)*time.Second)
+	defer cancel()
+	shutdownGracefully(ctx, httpServer, &broker, &c)
 	log.Printf("Exiting...")
 }
 
@@ -119,10 +135,9 @@ func setRabbitCreds() error {
 	return nil
 }
 
-/*
-func shutdownGracefully(ctx context.Context, httpServer *http.Server, broker *amqp.Broker, grpc *grpc.Server, controller *logic.Controller) {
+func shutdownGracefully(ctx context.Context, httpServer *http.Server, broker *amqp.Broker, controller *logic.Controller) {
 
-	// TODO: correct me
+	// TODO: correct me the name of the queue
 	errs := broker.ShutDownConsumersForQueues(ctx, []string{"rulesInterruptedEvaluationForAll"})
 	if errs == nil {
 		log.Printf("successfully shut down rabbitmq consumers for specific queues")
@@ -150,20 +165,15 @@ func shutdownGracefully(ctx context.Context, httpServer *http.Server, broker *am
 		}
 	}
 
-	//	logger.Info("interruption completed (no info about success criteria)")
 	if err := httpServer.Shutdown(ctx); err != nil {
-		logger.Errorf("failed to gracefully shut down HTTP server: %s", err.Error())
+		log.Printf("failed to gracefully shut down HTTP server: %s", err.Error())
 	} else {
-		logger.Info("Successfully shut down http server gracefully")
+		log.Printf("Successfully shut down http server gracefully")
 	}
 
 	if err := broker.ShutDown(ctx); err != nil {
-		logger.Errorf("failed to gracefully shut down rabbitMQ broker: %s", err.Error())
+		log.Printf("failed to gracefully shut down rabbitMQ broker: %s", err.Error())
 	} else {
-		logger.Info("Successfully shut down rabbitMQ broker gracefully")
+		log.Printf("Successfully shut down rabbitMQ broker gracefully")
 	}
-
-	grpc.GracefulStop()
-	logger.Info("Successfully shut down grpc server gracefully")
 }
-*/
