@@ -23,8 +23,8 @@ type Controller struct {
 }
 
 func NewController(sm service.ServerManager, b *amqp.Broker, d *db.Db) Controller {
-	streamCh := make(chan bool)
-	interruptionCh := make(chan bool)
+	streamCh := make(chan bool, 100)
+	interruptionCh := make(chan bool, 100)
 
 	return Controller{
 		ServerManager:        sm,
@@ -44,6 +44,7 @@ func (c *Controller) PerformStreaming(ctx context.Context, offset int32) error {
 			go func() {
 				offset++
 				log.Printf("will continue processing data from offset %d\n", offset)
+
 				err := c.PerformStreaming(ctx, offset)
 				if err != nil {
 					log.Printf("error when performing streaming: %v", err)
@@ -52,6 +53,11 @@ func (c *Controller) PerformStreaming(ctx context.Context, offset int32) error {
 		}
 	}()
 
+	// mark the start of streaming
+	c.StreamStartedChannel <- true
+
+	log.Printf("starting streaming from offset: %v", offset)
+
 	sm, err := c.db.UpsertStreamMetadata(ctx, db.StreamMetadata{
 		Offset: offset,
 	})
@@ -59,6 +65,8 @@ func (c *Controller) PerformStreaming(ctx context.Context, offset int32) error {
 	if err != nil {
 		log.Printf("error inserting stream metadata")
 	}
+
+	log.Printf("streamID is %v", sm.ID)
 
 	stream, err := c.ServerManager.GetStreamFromServer(ctx, offset)
 
@@ -80,6 +88,9 @@ func (c *Controller) PerformStreaming(ctx context.Context, offset int32) error {
 		}
 
 		log.Printf("received data: %v", data)
+
+		// keeping the offset to the latest value we've received
+		offset = data.Value
 
 		err = c.processData(data, sm.ID)
 		if err != nil {
@@ -103,6 +114,14 @@ func (c *Controller) PerformStreaming(ctx context.Context, offset int32) error {
 	// mark as completed
 	sm.Completed = true
 	_, err = c.db.UpsertStreamMetadata(ctx, sm)
+
+	if err == nil {
+		log.Printf("streaming completed successfully")
+	}
+
+	// mark the streaming as finished
+	<-c.StreamStartedChannel
+
 	return err
 }
 

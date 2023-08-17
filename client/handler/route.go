@@ -4,6 +4,7 @@ import (
 	"context"
 	"log"
 	"net/http"
+	"os"
 )
 
 // Route is the structure for an http route
@@ -55,7 +56,8 @@ func (h *Handler) Start(w http.ResponseWriter, r *http.Request) {
 	}()
 	w.Header().Set("Content-Type", "application/text; charset=UTF-8")
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte("stream started"))
+	podName := os.Getenv("CONFIG_POD_NAME")
+	w.Write([]byte("stream started on pod " + podName))
 	return
 }
 

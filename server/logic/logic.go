@@ -7,6 +7,7 @@ import (
 	"google.golang.org/grpc/keepalive"
 	"log"
 	"net"
+	"time"
 )
 
 type (
@@ -61,17 +62,20 @@ func (s *Server) GetData(req *pb.DataRequest, stream pb.Server_GetDataServer) er
 		}
 	}()
 
-	for offset = req.Offset; offset < 10; offset++ {
+	for offset = req.Offset; offset < 20; offset++ {
 
 		d, err := retrieveData(offset)
 		if err != nil {
 			log.Printf("error when retrieving data: %v", err)
+			continue
 		}
 
+		log.Printf("sending data %v", d)
 		if err := stream.Send(d); err != nil {
 			log.Printf("error streaming data: %s", err.Error())
 			return err
 		}
+		log.Printf("data sent %v", d)
 	}
 
 	return nil
@@ -79,6 +83,9 @@ func (s *Server) GetData(req *pb.DataRequest, stream pb.Server_GetDataServer) er
 
 func retrieveData(i int32) (*pb.Data, error) {
 
+	// putting 10 seconds delay between each data to be sent to allow enough time for problems to happen
+	// and also avoid cluttering the logs
+	time.Sleep(10 * time.Second)
 	if i == 5 {
 		return nil, fmt.Errorf("some error happened")
 	}

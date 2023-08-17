@@ -129,7 +129,7 @@ func (d *Db) GetPointOfInterruption(ctx context.Context, streamId string) (Data,
 		return Data{}, err
 	}
 	da := []Data{}
-	err = cur.All(ctx, da)
+	err = cur.All(ctx, &da)
 
 	if err != nil {
 		log.Printf("error when getting cur.All %v", err)

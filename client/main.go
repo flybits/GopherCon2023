@@ -137,8 +137,7 @@ func setRabbitCreds() error {
 
 func shutdownGracefully(ctx context.Context, httpServer *http.Server, broker *amqp.Broker, controller *logic.Controller) {
 
-	// TODO: correct me the name of the queue
-	errs := broker.ShutDownConsumersForQueues(ctx, []string{"rulesInterruptedEvaluationForAll"})
+	errs := broker.ShutDownConsumersForQueues(ctx, []string{"interrupted"})
 	if errs == nil {
 		log.Printf("successfully shut down rabbitmq consumers for specific queues")
 	} else {
