@@ -48,7 +48,7 @@ func (h *Handler) CheckHealth(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) Start(w http.ResponseWriter, r *http.Request) {
 
 	go func() {
-		err := h.controller.ServerManager.GetStreamFromServer(context.Background(), 0)
+		err := h.controller.PerformStreaming(context.Background(), 0)
 		if err != nil {
 			log.Printf("error happened: %v", err)
 		}

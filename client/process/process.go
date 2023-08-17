@@ -68,7 +68,7 @@ func (p *Process) processInterrupted(ctx context.Context, d amqp.Delivery) error
 	// so that on graceful shutdown we can close consuming on the queue before sending new interruption messages
 	// this is to ensure the same terminating pod does not pick up the newly emitted interruption message
 	go func() {
-		err = p.controller.CarryOnInterruptedStreaming(requestID, msg)
+		err = p.controller.CarryOnInterruptedStreaming(ctx, msg)
 		if err != nil {
 			log.Printf("error when carrying on streaming")
 		}

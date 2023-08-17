@@ -32,6 +32,7 @@ func NewController(sm service.ServerManager, b *amqp.Broker, d *db.Db) Controlle
 		db:                   d,
 		StreamStartedChannel: streamCh,
 		InterruptionChannel:  interruptionCh,
+		WaitGroup:            sync.WaitGroup{},
 	}
 }
 
@@ -66,6 +67,7 @@ func (c *Controller) PerformStreaming(ctx context.Context, offset int32) error {
 		return err
 	}
 
+	var lastSuccessfullyProcessedUserID string
 	for {
 		data, err := stream.Recv()
 		if err == io.EOF {
@@ -74,7 +76,7 @@ func (c *Controller) PerformStreaming(ctx context.Context, offset int32) error {
 
 		if err != nil {
 			log.Printf("Err var returned from stream Recv: %v", err)
-			//return c.ShutDownEvaluationForAllWithStreamingGracefully(ctx, ru.ID, lastSuccessfullyProcessedUserID, lastSuccessfullyProcessedDeviceID, fireAndForget, origin, uniqueID, p, true)
+			return c.ShutDownStreamingGracefully(ctx, sm, lastSuccessfullyProcessedUserID, false)
 		}
 
 		log.Printf("received data: %v", data)
@@ -91,8 +93,9 @@ func (c *Controller) PerformStreaming(ctx context.Context, offset int32) error {
 		select {
 		case <-c.InterruptionChannel:
 			log.Printf("going to interrupt streaming...")
-			return c.ShutDownStreamingGracefully(ctx, sm, data.UserID)
+			return c.ShutDownStreamingGracefully(ctx, sm, data.UserID, true)
 		default:
+			lastSuccessfullyProcessedUserID = data.UserID
 			continue
 		}
 	}
@@ -120,7 +123,7 @@ type InterruptionMessage struct {
 	StreamID string `json:"streamID"`
 }
 
-func (c *Controller) ShutDownStreamingGracefully(ctx context.Context, sm db.StreamMetadata, lastUserIDStreamed string, skipSendingInterruptionCompletedMessage bool) error {
+func (c *Controller) ShutDownStreamingGracefully(ctx context.Context, sm db.StreamMetadata, lastUserIDStreamed string, thisServiceShuttingDown bool) error {
 
 	if len(lastUserIDStreamed) > 0 {
 		sm.LastUserIDStreamed = lastUserIDStreamed
@@ -142,16 +145,13 @@ func (c *Controller) ShutDownStreamingGracefully(ctx context.Context, sm db.Stre
 		log.Printf("error when publishing interruption message: %v", err)
 	}
 
-	// if we are gracefully interrupting the process due to rules service going down, we want to send this message
-	// so that main listens and controls when to close other things
-	// but if we're interrupting because other dependency (ctxrepo) returned an error,
-	// we don't want to be sending this because there would be no consumer to listen to it
-	if !skipSendingInterruptionCompletedMessage {
-		// send interruption completed message
+	// if we are gracefully interrupting the process due to client service going down, we want to decrease the wait group
+	// but if we're interrupting because other dependency (server) returned an error,
+	// we don't want to be decreasing the wait group because the graceful shutdown on this container is not invoked
+	if thisServiceShuttingDown {
 		defer func() {
-			logger.Info("sending interruption completed message")
-			c.InterruptionCompleted <- true
-			logger.Info("interruption completed message successfully sent")
+			log.Printf("marking interruption as completed")
+			c.WaitGroup.Done()
 		}()
 	}
 
@@ -161,32 +161,18 @@ func (c *Controller) ShutDownStreamingGracefully(ctx context.Context, sm db.Stre
 	return nil
 }
 
-func (c *Controller) CarryOnInterruptedStreaming(requestId string, msg InterruptionMessage) error {
+func (c *Controller) CarryOnInterruptedStreaming(ctx context.Context, msg InterruptionMessage) error {
 
-	// the context has to be recreated from the background context in the goroutine, because the caller context with get cancelled when the request is over
-	ctx := context.WithValue(context.Background(), "x-request-id", []string{requestId})
-	logger := log.LoggerFromContext(ctx)
-	logger = logger.With("requestId", requestId)
-	ctx = log.ContextWithLogger(ctx, logger)
-
-	p, err := c.RulesProcessForAllInfoRepository.GetRuleProcessForAllInfoByID(ctx, msg.ProcessForAllID)
+	d, err := c.db.GetPointOfInterruption(ctx, msg.StreamID)
 	if err != nil {
-		logger.Errorf("error getting process for all info by id: %v", err)
+		log.Printf("error getting point of interruption: %v", err)
 		return err
 	}
 
-	logger.Debugf("retrieved processForAllInfo: %v", p)
-	r, err := c.RulesRepository.FindRule(ctx, p.RuleID.Hex(), p.TenantID)
-	if err != nil {
-		logger.Errorf("error retrieving rule from db: %v", err)
-		return err
-	}
-	tenantID, _ := fbuuid.FromString(p.TenantID)
-
-	err = c.EvaluateRuleForAllUsersInTenant(ctx, r, tenantID, msg.NewTenantScopedContext, msg.FireAndForget, msg.Origin, msg.UniqueID, p.LastRuleEvaluationID, &p)
+	err = c.PerformStreaming(ctx, d.Value)
 
 	if err != nil {
-		logger.Errorf("error when carrying on evaluation for all for msg %v: %v", msg, err)
+		log.Printf("error when carrying on streaming %v: %v", msg, err)
 	}
 	return err
 }
