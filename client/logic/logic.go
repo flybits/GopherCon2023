@@ -37,21 +37,6 @@ func NewController(sm service.ServerManager, b *amqp.Broker, d *db.Db) Controlle
 }
 
 func (c *Controller) PerformStreaming(ctx context.Context, offset int32) error {
-	defer func() {
-		if r := recover(); r != nil {
-			log.Printf("recovered from panic at offset %v: panic %v", offset, r)
-
-			go func() {
-				offset++
-				log.Printf("will continue processing data from offset %d\n", offset)
-
-				err := c.PerformStreaming(ctx, offset)
-				if err != nil {
-					log.Printf("error when performing streaming: %v", err)
-				}
-			}()
-		}
-	}()
 
 	// mark the start of streaming
 	c.StreamStartedChannel <- true
@@ -75,10 +60,48 @@ func (c *Controller) PerformStreaming(ctx context.Context, offset int32) error {
 		return err
 	}
 
+	err = c.receiveStream(ctx, stream, sm)
+	if err != nil {
+		log.Printf("error when receiving stream: %v", err)
+		return err
+	}
+
+	// mark as completed
+	sm.Completed = true
+	_, err = c.db.UpsertStreamMetadata(ctx, sm)
+
+	if err == nil {
+		log.Printf("streaming completed successfully")
+	}
+
+	// mark the streaming as finished
+	<-c.StreamStartedChannel
+
+	return err
+}
+
+func (c *Controller) receiveStream(ctx context.Context, stream pb.Server_GetDataClient, sm db.StreamMetadata) error {
+	defer func() {
+		if r := recover(); r != nil {
+			log.Printf("recovered from panic: panic %v", r)
+
+			go func() {
+				//log.Printf("will continue processing data from offset %d\n", offset)
+
+				// continue with a new context so that it does not cancel prematurely
+				err := c.receiveStream(context.Background(), stream, sm)
+				if err != nil {
+					log.Printf("error when performing streaming: %v", err)
+				}
+			}()
+		}
+	}()
+
 	var lastSuccessfullyProcessedUserID string
 	for {
 		data, err := stream.Recv()
 		if err == io.EOF {
+			log.Printf("received end of stream")
 			break
 		}
 
@@ -88,9 +111,6 @@ func (c *Controller) PerformStreaming(ctx context.Context, offset int32) error {
 		}
 
 		log.Printf("received data: %v", data)
-
-		// keeping the offset to the latest value we've received
-		offset = data.Value
 
 		err = c.processData(data, sm.ID)
 		if err != nil {
@@ -110,22 +130,10 @@ func (c *Controller) PerformStreaming(ctx context.Context, offset int32) error {
 			continue
 		}
 	}
-
-	// mark as completed
-	sm.Completed = true
-	_, err = c.db.UpsertStreamMetadata(ctx, sm)
-
-	if err == nil {
-		log.Printf("streaming completed successfully")
-	}
-
-	// mark the streaming as finished
-	<-c.StreamStartedChannel
-
-	return err
+	return nil
 }
 
-func (s *Controller) processData(data *pb.Data, streamID string) error {
+func (c *Controller) processData(data *pb.Data, streamID string) error {
 	if data.Value == 6 {
 		return fmt.Errorf("mock error")
 	}
@@ -134,7 +142,7 @@ func (s *Controller) processData(data *pb.Data, streamID string) error {
 		panic("oops panic")
 	}
 
-	err := s.db.UpsertData(context.Background(), data, streamID)
+	err := c.db.UpsertData(context.Background(), data, streamID)
 	return err
 }
 

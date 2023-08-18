@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
         - name: server
-          image: armanmasoumi/gophercon-server:10
+          image: armanmasoumi/gophercon-server:16
           ports:
             - name: http
               containerPort: 8000

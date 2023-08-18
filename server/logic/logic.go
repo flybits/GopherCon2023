@@ -49,16 +49,19 @@ func Setup(port string) (*grpc.Server, error) {
 func (s *Server) GetData(req *pb.DataRequest, stream pb.Server_GetDataServer) error {
 
 	offset := req.Offset
+	log.Printf("received request to get data %v", req)
+
 	defer func() {
 		if r := recover(); r != nil {
 			log.Printf("recovered from panic at offset %v: panic %v", offset, r)
 
-			go func() {
-				offset++
-				req.Offset = offset
-				log.Printf("will continue sending data from offset %d\n", offset)
-				s.GetData(req, stream)
-			}()
+			offset++
+			req.Offset = offset
+			log.Printf("will continue sending data from offset %d\n", offset)
+			err := s.GetData(req, stream)
+			if err != nil {
+				log.Printf("error while getting data: %v", err)
+			}
 		}
 	}()
 
@@ -90,7 +93,7 @@ func retrieveData(i int32) (*pb.Data, error) {
 		return nil, fmt.Errorf("some error happened")
 	}
 
-	if i == 8 {
+	if i == 12 {
 		panic("oops panic on server")
 	}
 
