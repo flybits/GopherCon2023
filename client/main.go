@@ -81,6 +81,7 @@ func main() {
 
 	if err != nil {
 		log.Printf("error when connecting to rabbitmq server: %v", err)
+		panic("error connecting to rabbitmq")
 	} else {
 		log.Println("connected to rabbitmq server")
 	}

@@ -86,9 +86,9 @@ func (s *Server) GetData(req *pb.DataRequest, stream pb.Server_GetDataServer) er
 
 func retrieveData(i int32) (*pb.Data, error) {
 
-	// putting 10 seconds delay between each data to be sent to allow enough time for problems to happen
+	// putting 5 seconds delay between each data to be sent to allow enough time for problems to happen
 	// and also avoid cluttering the logs
-	time.Sleep(10 * time.Second)
+	time.Sleep(5 * time.Second)
 	if i == 5 {
 		return nil, fmt.Errorf("some error happened")
 	}

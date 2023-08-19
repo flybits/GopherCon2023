@@ -190,6 +190,8 @@ func (c *Controller) ShutDownStreamingGracefully(ctx context.Context, sm db.Stre
 
 func (c *Controller) CarryOnInterruptedStreaming(ctx context.Context, msg InterruptionMessage) error {
 
+	log.Printf("carrying on streaming %v", msg.StreamID)
+
 	d, err := c.db.GetPointOfInterruption(ctx, msg.StreamID)
 	if err != nil {
 		log.Printf("error getting point of interruption: %v", err)
