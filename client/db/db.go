@@ -145,7 +145,7 @@ func (d *Db) GetPointOfInterruption(ctx context.Context, streamId string) (Data,
 
 func (d *Db) GetOngoingStreamWithPodName(ctx context.Context, podName string) (StreamMetadata, error) {
 	query := bson.M{"podName": bson.M{"$eq": podName}, "completed": bson.M{"$eq": false}}
-	r := d.client.Database("client").Collection("data").FindOne(ctx, query)
+	r := d.client.Database("client").Collection("streams").FindOne(ctx, query)
 	if errors.Is(r.Err(), mongo.ErrNoDocuments) {
 		// there is no in progress streaming for the terminated pod
 		return StreamMetadata{}, r.Err()
