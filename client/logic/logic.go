@@ -36,7 +36,7 @@ func NewController(sm service.ServerManager, b *amqp.Broker, d *db.Db) Controlle
 	}
 }
 
-func (c *Controller) PerformStreaming(ctx context.Context, offset int32) error {
+func (c *Controller) PerformStreaming(ctx context.Context, offset int32, streamID string) error {
 
 	// mark the start of streaming
 	c.StreamStartedChannel <- true
@@ -198,7 +198,7 @@ func (c *Controller) CarryOnInterruptedStreaming(ctx context.Context, msg Interr
 		return err
 	}
 
-	err = c.PerformStreaming(ctx, d.Value)
+	err = c.PerformStreaming(ctx, d.Value+1, msg.StreamID)
 
 	if err != nil {
 		log.Printf("error when carrying on streaming %v: %v", msg, err)

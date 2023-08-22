@@ -9,6 +9,7 @@ import (
 	"github.com/flybits/gophercon2023/client/logic"
 	"go.mongodb.org/mongo-driver/mongo"
 	"log"
+	"os"
 )
 
 type Process struct {
@@ -77,7 +78,8 @@ func (p *Process) processInterrupted(ctx context.Context, d amqp.Delivery) error
 }
 
 func (p *Process) processOOM(ctx context.Context, d amqp.Delivery) error {
-	log.Printf("received message for OOM %v", string(d.Body))
+	podName := os.Getenv("CONFIG_POD_NAME")
+	log.Printf("pod %v received message for OOM %v", podName, string(d.Body))
 
 	var e containerRestartEvent
 	err := json.Unmarshal(d.Body, &e)
@@ -102,7 +104,7 @@ func (p *Process) processOOM(ctx context.Context, d amqp.Delivery) error {
 	}
 
 	go func() {
-		err = p.controller.PerformStreaming(ctx, data.Value)
+		err = p.controller.PerformStreaming(ctx, data.Value+1, stm.ID)
 		if err != nil {
 			log.Printf("error when resuming streaming: %v", err)
 		}

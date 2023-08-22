@@ -2,6 +2,7 @@ package handler
 
 import (
 	"context"
+	"github.com/google/uuid"
 	"log"
 	"net/http"
 	"os"
@@ -49,7 +50,7 @@ func (h *Handler) CheckHealth(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) Start(w http.ResponseWriter, r *http.Request) {
 
 	go func() {
-		err := h.controller.PerformStreaming(context.Background(), 0)
+		err := h.controller.PerformStreaming(context.Background(), 0, uuid.New().String())
 		if err != nil {
 			log.Printf("error happened: %v", err)
 		}
