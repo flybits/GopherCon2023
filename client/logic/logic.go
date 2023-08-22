@@ -10,6 +10,8 @@ import (
 	"github.com/flybits/gophercon2023/server/pb"
 	"io"
 	"log"
+	"strconv"
+	"strings"
 	"sync"
 )
 
@@ -126,6 +128,7 @@ func (c *Controller) receiveStream(ctx context.Context, stream pb.Server_GetData
 			log.Printf("going to interrupt streaming...")
 			return c.ShutDownStreamingGracefully(ctx, sm, data.UserID, true)
 		default:
+			log.Printf("setting the last processed user id: %v", data.UserID)
 			lastSuccessfullyProcessedUserID = data.UserID
 			continue
 		}
@@ -152,6 +155,7 @@ type InterruptionMessage struct {
 
 func (c *Controller) ShutDownStreamingGracefully(ctx context.Context, sm db.StreamMetadata, lastUserIDStreamed string, thisServiceShuttingDown bool) error {
 
+	log.Printf("the lastUserIDStreamed is %v", lastUserIDStreamed)
 	if len(lastUserIDStreamed) > 0 {
 		sm.LastUserIDStreamed = lastUserIDStreamed
 	}
@@ -161,6 +165,7 @@ func (c *Controller) ShutDownStreamingGracefully(ctx context.Context, sm db.Stre
 		return err
 	}
 
+	log.Printf("the stream metadata with id %v is updated", sm.ID)
 	b := InterruptionMessage{
 		StreamID: sm.ID,
 	}
@@ -182,9 +187,6 @@ func (c *Controller) ShutDownStreamingGracefully(ctx context.Context, sm db.Stre
 		}()
 	}
 
-	if err != nil {
-		return fmt.Errorf("Error publishing evalutaion for all interruption message: %v", err.Error())
-	}
 	return nil
 }
 
@@ -192,16 +194,34 @@ func (c *Controller) CarryOnInterruptedStreaming(ctx context.Context, msg Interr
 
 	log.Printf("carrying on streaming %v", msg.StreamID)
 
-	d, err := c.db.GetPointOfInterruption(ctx, msg.StreamID)
+	sm, err := c.db.GetStreamMetadata(ctx, msg.StreamID)
 	if err != nil {
 		log.Printf("error getting point of interruption: %v", err)
 		return err
 	}
 
-	err = c.PerformStreaming(ctx, d.Value+1, msg.StreamID)
+	parts := strings.Split(sm.LastUserIDStreamed, "userID")
+	if len(parts) != 2 {
+		return fmt.Errorf("the lastUserID streamed was not able to provide us with the offset: %v", sm.LastUserIDStreamed)
+	}
+	i, err := strconv.ParseInt(parts[1], 10, 32)
+	if err != nil {
+		return fmt.Errorf("error converting %v to int: %v", parts[1], err)
+	}
+
+	err = c.PerformStreaming(ctx, int32(i)+1, msg.StreamID)
 
 	if err != nil {
 		log.Printf("error when carrying on streaming %v: %v", msg, err)
+
+		// send message again so that it is retried
+		bytes, _ := json.Marshal(sm)
+		pub := amqp.PublishWithDefaults("client", "interrupted", bytes)
+		err = c.broker.Publish(ctx, pub)
+		if err != nil {
+			log.Printf("error when publishing interruption message: %v", err)
+		}
+
 	}
 	return err
 }

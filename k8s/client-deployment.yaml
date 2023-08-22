@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
         - name: client
-          image: armanmasoumi/gophercon-client:34
+          image: armanmasoumi/gophercon-client:39
           ports:
             - name: http
               containerPort: 8000

@@ -71,7 +71,7 @@ func (p *Process) processInterrupted(ctx context.Context, d amqp.Delivery) error
 	go func() {
 		err = p.controller.CarryOnInterruptedStreaming(ctx, msg)
 		if err != nil {
-			log.Printf("error when carrying on streaming")
+			log.Printf("error when carrying on streaming: %v", err)
 		}
 	}()
 	return nil
