@@ -97,6 +97,8 @@ func (p *Process) processOOM(ctx context.Context, d amqp.Delivery) error {
 		log.Printf("error retrieving streaming with pod name: %v", err)
 	}
 
+	log.Printf("retrieved this metadata as part of recovery: %v", stm)
+
 	data, err := p.db.GetPointOfInterruption(ctx, stm.ID)
 	if err != nil {
 		log.Printf("error when getting point of interruption: %v", err)

@@ -12,6 +12,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 	"io"
 	"log"
+	"os"
 	"strconv"
 	"strings"
 	"sync"
@@ -61,19 +62,19 @@ func (c *Controller) PerformStreaming(ctx context.Context, offset int32, streamI
 	if errors.Is(err, mongo.ErrNoDocuments) {
 		// there is no in progress streaming for the stream id so create a new one
 		sm = db.StreamMetadata{
-			ID:     streamID,
-			Offset: offset,
+			ID: streamID,
 		}
+	}
 
-		sm, err = c.db.UpsertStreamMetadata(ctx, db.StreamMetadata{
-			ID:     streamID,
-			Offset: offset,
-		})
+	// update metadata to track with pod is performing streaming
+	podName := os.Getenv("CONFIG_POD_NAME")
+	sm.PodName = podName
+	sm.Offset = offset
+	sm, err = c.db.UpsertStreamMetadata(ctx, sm)
 
-		if err != nil {
-			log.Printf("error inserting stream metadata %v", err)
-			return err
-		}
+	if err != nil {
+		log.Printf("error inserting stream metadata %v", err)
+		return err
 	}
 
 	stream, err := c.ServerManager.GetStreamFromServer(ctx, offset)
@@ -85,7 +86,9 @@ func (c *Controller) PerformStreaming(ctx context.Context, offset int32, streamI
 
 	// a channel to receive errors from
 	errCh := make(chan error)
-	c.receiveStream(ctx, stream, sm, sm.LastUserIDStreamed, errCh)
+	go c.receiveStream(ctx, stream, sm, sm.LastUserIDStreamed, errCh)
+
+	// waiting to hear from the goroutine above
 	err = <-errCh
 	if err != nil {
 		log.Printf("error when receiving stream: %v", err)
@@ -154,7 +157,9 @@ func (c *Controller) receiveStream(ctx context.Context, stream pb.Server_GetData
 			continue
 		}
 	}
+	log.Printf("finishing receiving streaming")
 	errCh <- nil
+	log.Printf("finished receiving streaming")
 }
 
 func (c *Controller) processData(data *pb.Data, streamID string) error {

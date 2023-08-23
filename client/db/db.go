@@ -6,14 +6,12 @@ import (
 	"fmt"
 	"github.com/flybits/gophercon2023/client/cmd/config"
 	"github.com/flybits/gophercon2023/server/pb"
-	"github.com/google/uuid"
 	"go.elastic.co/apm/module/apmmongo/v2"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.mongodb.org/mongo-driver/mongo/readpref"
 	"log"
-	"os"
 	"strings"
 	"time"
 )
@@ -93,13 +91,6 @@ type Data struct {
 }
 
 func (d *Db) UpsertStreamMetadata(ctx context.Context, sm StreamMetadata) (StreamMetadata, error) {
-
-	podName := os.Getenv("CONFIG_POD_NAME")
-	if len(sm.ID) < 1 {
-		sm.ID = uuid.New().String()
-	}
-
-	sm.PodName = podName
 	query := bson.M{"_id": bson.M{"$eq": sm.ID}}
 	update := bson.M{"$set": sm}
 	ops := options.Update().SetUpsert(true)
@@ -120,9 +111,11 @@ func (d *Db) UpsertData(ctx context.Context, data *pb.Data, streamID string) err
 	return err
 }
 
-func (d *Db) GetPointOfInterruption(ctx context.Context, streamId string) (Data, error) {
-	query := bson.M{"streamID": bson.M{"$eq": streamId}}
-	ops := options.Find().SetSort(bson.M{"_id": -1}).SetLimit(1)
+func (d *Db) GetPointOfInterruption(ctx context.Context, streamID string) (Data, error) {
+	log.Printf("looking to get point of interruption for stream %v", streamID)
+
+	query := bson.M{"streamID": bson.M{"$eq": streamID}}
+	ops := options.Find().SetSort(bson.M{"value": -1}).SetLimit(1)
 	cur, err := d.client.Database("client").Collection("data").Find(ctx, query, ops)
 	defer cur.Close(ctx)
 	if err != nil {
