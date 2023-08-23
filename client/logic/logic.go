@@ -3,16 +3,19 @@ package logic
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"github.com/flybits/gophercon2023/amqp"
 	"github.com/flybits/gophercon2023/client/db"
 	"github.com/flybits/gophercon2023/client/service"
 	"github.com/flybits/gophercon2023/server/pb"
+	"go.mongodb.org/mongo-driver/mongo"
 	"io"
 	"log"
 	"strconv"
 	"strings"
 	"sync"
+	"time"
 )
 
 type Controller struct {
@@ -43,17 +46,35 @@ func (c *Controller) PerformStreaming(ctx context.Context, offset int32, streamI
 	// mark the start of streaming
 	c.StreamStartedChannel <- true
 
-	log.Printf("starting streaming from offset: %v", offset)
+	// mark the streaming as finished
+	defer func() {
+		<-c.StreamStartedChannel
+	}()
 
-	sm, err := c.db.UpsertStreamMetadata(ctx, db.StreamMetadata{
-		Offset: offset,
-	})
+	var sm db.StreamMetadata
+	var err error
 
-	if err != nil {
-		log.Printf("error inserting stream metadata")
+	log.Printf("starting streaming with id %v from offset: %v", streamID, offset)
+
+	// get stream metadata if it exists
+	sm, err = c.db.GetOngoingStreamMetadata(ctx, streamID)
+	if errors.Is(err, mongo.ErrNoDocuments) {
+		// there is no in progress streaming for the stream id so create a new one
+		sm = db.StreamMetadata{
+			ID:     streamID,
+			Offset: offset,
+		}
+
+		sm, err = c.db.UpsertStreamMetadata(ctx, db.StreamMetadata{
+			ID:     streamID,
+			Offset: offset,
+		})
+
+		if err != nil {
+			log.Printf("error inserting stream metadata %v", err)
+			return err
+		}
 	}
-
-	log.Printf("streamID is %v", sm.ID)
 
 	stream, err := c.ServerManager.GetStreamFromServer(ctx, offset)
 
@@ -62,12 +83,16 @@ func (c *Controller) PerformStreaming(ctx context.Context, offset int32, streamI
 		return err
 	}
 
-	err = c.receiveStream(ctx, stream, sm)
+	// a channel to receive errors from
+	errCh := make(chan error)
+	c.receiveStream(ctx, stream, sm, sm.LastUserIDStreamed, errCh)
+	err = <-errCh
 	if err != nil {
 		log.Printf("error when receiving stream: %v", err)
 		return err
 	}
 
+	log.Printf("marking stream metadata as complete")
 	// mark as completed
 	sm.Completed = true
 	_, err = c.db.UpsertStreamMetadata(ctx, sm)
@@ -75,31 +100,17 @@ func (c *Controller) PerformStreaming(ctx context.Context, offset int32, streamI
 	if err == nil {
 		log.Printf("streaming completed successfully")
 	}
-
-	// mark the streaming as finished
-	<-c.StreamStartedChannel
-
 	return err
 }
 
-func (c *Controller) receiveStream(ctx context.Context, stream pb.Server_GetDataClient, sm db.StreamMetadata) error {
+func (c *Controller) receiveStream(ctx context.Context, stream pb.Server_GetDataClient, sm db.StreamMetadata, lastSuccessfullyProcessedUserID string, errCh chan error) {
 	defer func() {
 		if r := recover(); r != nil {
 			log.Printf("recovered from panic: panic %v", r)
-
-			go func() {
-				//log.Printf("will continue processing data from offset %d\n", offset)
-
-				// continue with a new context so that it does not cancel prematurely
-				err := c.receiveStream(context.Background(), stream, sm)
-				if err != nil {
-					log.Printf("error when performing streaming: %v", err)
-				}
-			}()
+			c.receiveStream(ctx, stream, sm, lastSuccessfullyProcessedUserID, errCh)
 		}
 	}()
 
-	var lastSuccessfullyProcessedUserID string
 	for {
 		data, err := stream.Recv()
 		if err == io.EOF {
@@ -108,8 +119,14 @@ func (c *Controller) receiveStream(ctx context.Context, stream pb.Server_GetData
 		}
 
 		if err != nil {
-			log.Printf("Err var returned from stream Recv: %v", err)
-			return c.ShutDownStreamingGracefully(ctx, sm, lastSuccessfullyProcessedUserID, false)
+			log.Printf("with error happening lastSuccessfullyProcessedUserID is %v", lastSuccessfullyProcessedUserID)
+			log.Printf("Err returned from stream Recv: %v", err)
+			err = c.ShutDownStreamingGracefully(ctx, sm, lastSuccessfullyProcessedUserID, false)
+			if err != nil {
+				log.Printf("error when shutting down streaming gracefully")
+			}
+			errCh <- fmt.Errorf("streaming interrupted due to error on receiving")
+			return
 		}
 
 		log.Printf("received data: %v", data)
@@ -126,14 +143,18 @@ func (c *Controller) receiveStream(ctx context.Context, stream pb.Server_GetData
 		select {
 		case <-c.InterruptionChannel:
 			log.Printf("going to interrupt streaming...")
-			return c.ShutDownStreamingGracefully(ctx, sm, data.UserID, true)
+			err = c.ShutDownStreamingGracefully(ctx, sm, data.UserID, true)
+			if err != nil {
+				log.Printf("error when shutting down streaming due to graceful shutdown: %v", err)
+			}
+			errCh <- fmt.Errorf("streaming is interrupted due to graceful shutdown")
+			return
 		default:
-			log.Printf("setting the last processed user id: %v", data.UserID)
 			lastSuccessfullyProcessedUserID = data.UserID
 			continue
 		}
 	}
-	return nil
+	errCh <- nil
 }
 
 func (c *Controller) processData(data *pb.Data, streamID string) error {
@@ -194,9 +215,9 @@ func (c *Controller) CarryOnInterruptedStreaming(ctx context.Context, msg Interr
 
 	log.Printf("carrying on streaming %v", msg.StreamID)
 
-	sm, err := c.db.GetStreamMetadata(ctx, msg.StreamID)
+	sm, err := c.db.GetOngoingStreamMetadata(ctx, msg.StreamID)
 	if err != nil {
-		log.Printf("error getting point of interruption: %v", err)
+		log.Printf("error carrying on interruption: %v", err)
 		return err
 	}
 
@@ -214,8 +235,15 @@ func (c *Controller) CarryOnInterruptedStreaming(ctx context.Context, msg Interr
 	if err != nil {
 		log.Printf("error when carrying on streaming %v: %v", msg, err)
 
+		// this is in case there are no servers are available
+		// sleep a little before requesting carrying on again
+
+		time.Sleep(5 * time.Second)
 		// send message again so that it is retried
-		bytes, _ := json.Marshal(sm)
+		bytes, _ := json.Marshal(InterruptionMessage{
+			StreamID: sm.ID,
+		})
+
 		pub := amqp.PublishWithDefaults("client", "interrupted", bytes)
 		err = c.broker.Publish(ctx, pub)
 		if err != nil {

@@ -159,13 +159,13 @@ func (d *Db) GetOngoingStreamWithPodName(ctx context.Context, podName string) (S
 
 }
 
-func (d *Db) GetStreamMetadata(ctx context.Context, streamID string) (StreamMetadata, error) {
+func (d *Db) GetOngoingStreamMetadata(ctx context.Context, streamID string) (StreamMetadata, error) {
 	query := bson.M{"_id": bson.M{"$eq": streamID}, "completed": bson.M{"$eq": false}}
 	r := d.client.Database("client").Collection("streams").FindOne(ctx, query)
-	if errors.Is(r.Err(), mongo.ErrNoDocuments) {
-		// there is no in progress streaming for the stream id
+	if r.Err() != nil {
 		return StreamMetadata{}, r.Err()
 	}
+
 	var sm StreamMetadata
 	err := r.Decode(&sm)
 	if err != nil {
