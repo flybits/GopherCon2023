@@ -48,12 +48,26 @@ func Setup(port string) (*grpc.Server, error) {
 // GetData streams the data back to the client
 func (s *Server) GetData(req *pb.DataRequest, stream pb.Server_GetDataServer) error {
 
-	var i int32
+	offset := req.Offset
 	log.Printf("received request to get data %v", req)
 
-	for i = 0; i < 20; i++ {
+	defer func() {
+		if r := recover(); r != nil {
+			log.Printf("recovered from panic at offset %v: panic %v", offset, r)
 
-		d, err := retrieveData(i)
+			offset++
+			req.Offset = offset
+			log.Printf("will continue sending data from offset %d\n", offset)
+			err := s.GetData(req, stream)
+			if err != nil {
+				log.Printf("error while getting data: %v", err)
+			}
+		}
+	}()
+
+	for offset = req.Offset; offset < 20; offset++ {
+
+		d, err := retrieveData(offset)
 		if err != nil {
 			log.Printf("error when retrieving data: %v", err)
 			continue
@@ -73,6 +87,14 @@ func (s *Server) GetData(req *pb.DataRequest, stream pb.Server_GetDataServer) er
 func retrieveData(i int32) (*pb.Data, error) {
 
 	time.Sleep(1 * time.Second)
+
+	if i == 5 {
+		return nil, fmt.Errorf("some error happened")
+	}
+
+	if i == 12 {
+		panic("oops panic on server")
+	}
 
 	return &pb.Data{
 		UserID: fmt.Sprintf("userID%v", i),

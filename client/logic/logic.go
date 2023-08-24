@@ -2,6 +2,7 @@ package logic
 
 import (
 	"context"
+	"fmt"
 	"github.com/flybits/gophercon2023/amqp"
 	"github.com/flybits/gophercon2023/client/db"
 	"github.com/flybits/gophercon2023/client/service"
@@ -59,6 +60,13 @@ func (c *Controller) PerformStreaming(ctx context.Context, offset int32, streamI
 
 func (c *Controller) receiveStream(ctx context.Context, stream pb.Server_GetDataClient, sm db.StreamMetadata, lastSuccessfullyProcessedUserID string, errCh chan error) {
 
+	defer func() {
+		if r := recover(); r != nil {
+			log.Printf("recovered from panic: panic %v", r)
+			c.receiveStream(ctx, stream, sm, lastSuccessfullyProcessedUserID, errCh)
+		}
+	}()
+
 	for {
 		data, err := stream.Recv()
 		if err == io.EOF {
@@ -87,6 +95,14 @@ func (c *Controller) receiveStream(ctx context.Context, stream pb.Server_GetData
 }
 
 func (c *Controller) processData(data *pb.Data, streamID string) error {
+	if data.Value == 6 {
+		return fmt.Errorf("mock error")
+	}
+
+	if data.Value == 7 {
+		panic("oops panic")
+	}
+
 	err := c.db.UpsertData(context.Background(), data, streamID)
 	return err
 }

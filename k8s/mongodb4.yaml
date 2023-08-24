@@ -4,7 +4,7 @@ apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
   name: mongodb4-pvc
-  namespace: naive
+  namespace: naive-panic
 spec:
   accessModes:
     - ReadWriteOnce
@@ -16,7 +16,7 @@ apiVersion: apps/v1
 kind: StatefulSet
 metadata:
   name: mongodb4
-  namespace: naive
+  namespace: naive-panic
 spec:
   serviceName: mongodb4
   replicas: 1
@@ -58,7 +58,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: mongodb4
-  namespace: naive
+  namespace: naive-panic
   labels:
     app: mongodb4
 spec:
