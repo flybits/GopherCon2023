@@ -2,6 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: server
+  namespace: naive
   labels:
     app: server
 spec:
@@ -16,7 +17,7 @@ spec:
     spec:
       containers:
         - name: server
-          image: armanmasoumi/gophercon-server:17
+          image: armanmasoumi/gophercon-server:naive
           ports:
             - name: http
               containerPort: 8000
