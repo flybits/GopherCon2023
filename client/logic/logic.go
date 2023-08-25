@@ -51,19 +51,19 @@ func (c *Controller) PerformStreaming(ctx context.Context, offset int32, streamI
 
 	// a channel to receive errors from
 	errCh := make(chan error)
-	go c.receiveStream(ctx, stream, sm, sm.LastUserIDStreamed, errCh)
+	go c.receiveStream(ctx, stream, sm, errCh)
 
 	// waiting to hear from the goroutine above
 	err = <-errCh
 	return err
 }
 
-func (c *Controller) receiveStream(ctx context.Context, stream pb.Server_GetDataClient, sm db.StreamMetadata, lastSuccessfullyProcessedUserID string, errCh chan error) {
+func (c *Controller) receiveStream(ctx context.Context, stream pb.Server_GetDataClient, sm db.StreamMetadata, errCh chan error) {
 
 	defer func() {
 		if r := recover(); r != nil {
 			log.Printf("recovered from panic: panic %v", r)
-			c.receiveStream(ctx, stream, sm, lastSuccessfullyProcessedUserID, errCh)
+			c.receiveStream(ctx, stream, sm, errCh)
 		}
 	}()
 
@@ -90,7 +90,6 @@ func (c *Controller) receiveStream(ctx context.Context, stream pb.Server_GetData
 		log.Printf("processed data %v", data)
 
 	}
-
 	errCh <- nil
 }
 
