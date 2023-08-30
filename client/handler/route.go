@@ -66,12 +66,9 @@ func (h *Handler) OOM(w http.ResponseWriter, r *http.Request) {
 
 	// causing intentional OOM
 	size := 10000000000000
-	bubu := make([]int64, size)
+	b := make([]int64, size)
 	for i := 0; i < size; i++ {
-		bubu[i] = 12233445566677777
+		b[i] = 12233445566677777
 	}
-	w.Header().Set("Content-Type", "application/text; charset=UTF-8")
-	w.WriteHeader(http.StatusOK)
-	w.Write([]byte("stream started"))
 	return
 }

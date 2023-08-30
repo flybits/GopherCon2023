@@ -122,7 +122,6 @@ func (c *Controller) receiveStream(ctx context.Context, stream pb.Server_GetData
 		}
 
 		if err != nil {
-			log.Printf("with error happening lastSuccessfullyProcessedUserID is %v", lastSuccessfullyProcessedUserID)
 			log.Printf("Err returned from stream Recv: %v", err)
 			err = c.ShutDownStreamingGracefully(ctx, sm, lastSuccessfullyProcessedUserID, false)
 			if err != nil {
@@ -131,7 +130,6 @@ func (c *Controller) receiveStream(ctx context.Context, stream pb.Server_GetData
 			errCh <- fmt.Errorf("streaming interrupted due to error on receiving")
 			return
 		}
-
 		log.Printf("received data: %v", data)
 
 		err = c.processData(data, sm.ID)
@@ -157,6 +155,7 @@ func (c *Controller) receiveStream(ctx context.Context, stream pb.Server_GetData
 			continue
 		}
 	}
+
 	log.Printf("finishing receiving streaming")
 	errCh <- nil
 	log.Printf("finished receiving streaming")
@@ -217,7 +216,6 @@ func (c *Controller) ShutDownStreamingGracefully(ctx context.Context, sm db.Stre
 }
 
 func (c *Controller) CarryOnInterruptedStreaming(ctx context.Context, msg InterruptionMessage) error {
-
 	log.Printf("carrying on streaming %v", msg.StreamID)
 
 	sm, err := c.db.GetOngoingStreamMetadata(ctx, msg.StreamID)
@@ -226,24 +224,20 @@ func (c *Controller) CarryOnInterruptedStreaming(ctx context.Context, msg Interr
 		return err
 	}
 
-	parts := strings.Split(sm.LastUserIDStreamed, "userID")
-	if len(parts) != 2 {
-		return fmt.Errorf("the lastUserID streamed was not able to provide us with the offset: %v", sm.LastUserIDStreamed)
-	}
-	i, err := strconv.ParseInt(parts[1], 10, 32)
+	i, err := c.findOffset(sm.LastUserIDStreamed)
 	if err != nil {
-		return fmt.Errorf("error converting %v to int: %v", parts[1], err)
+		return err
 	}
 
-	err = c.PerformStreaming(ctx, int32(i)+1, msg.StreamID)
+	err = c.PerformStreaming(ctx, i+1, msg.StreamID)
 
 	if err != nil {
 		log.Printf("error when carrying on streaming %v: %v", msg, err)
 
 		// this is in case there are no servers are available
 		// sleep a little before requesting carrying on again
-
 		time.Sleep(5 * time.Second)
+
 		// send message again so that it is retried
 		bytes, _ := json.Marshal(InterruptionMessage{
 			StreamID: sm.ID,
@@ -257,4 +251,16 @@ func (c *Controller) CarryOnInterruptedStreaming(ctx context.Context, msg Interr
 
 	}
 	return err
+}
+
+func (c *Controller) findOffset(userID string) (int32, error) {
+	parts := strings.Split(userID, "userID")
+	if len(parts) != 2 {
+		return 0, fmt.Errorf("the lastUserID streamed was not able to provide us with the offset: %v", userID)
+	}
+	i, err := strconv.ParseInt(parts[1], 10, 32)
+	if err != nil {
+		return 0, fmt.Errorf("error converting %v to int: %v", parts[1], err)
+	}
+	return int32(i), nil
 }

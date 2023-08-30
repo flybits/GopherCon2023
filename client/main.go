@@ -95,6 +95,7 @@ func main() {
 		Handler:   router,
 		TLSConfig: nil,
 	}
+
 	// listen for sigint/term from OS to trigger graceful shut down
 	terminationChannel := make(chan os.Signal, 1)
 	signal.Notify(terminationChannel, syscall.SIGINT, syscall.SIGTERM)
@@ -153,8 +154,6 @@ func shutdownGracefully(ctx context.Context, httpServer *http.Server, broker *am
 			controller.WaitGroup.Add(1)
 			controller.InterruptionChannel <- true
 			log.Printf("interruption message sent")
-
-			controller.WaitGroup.Wait()
 		default:
 			breakOut = true
 			break
@@ -164,6 +163,8 @@ func shutdownGracefully(ctx context.Context, httpServer *http.Server, broker *am
 			break
 		}
 	}
+
+	controller.WaitGroup.Wait()
 
 	if err := httpServer.Shutdown(ctx); err != nil {
 		log.Printf("failed to gracefully shut down HTTP server: %s", err.Error())

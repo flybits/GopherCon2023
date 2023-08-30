@@ -88,7 +88,7 @@ func retrieveData(i int32) (*pb.Data, error) {
 
 	// putting 5 seconds delay between each data to be sent to allow enough time for problems to happen
 	// and also avoid cluttering the logs
-	time.Sleep(5 * time.Second)
+	time.Sleep(1 * time.Second)
 	if i == 5 {
 		return nil, fmt.Errorf("some error happened")
 	}

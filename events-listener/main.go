@@ -27,25 +27,10 @@ func main() {
 		log.Printf("error setting rabbit credentials: %v", err)
 	}
 
-	//p := process.NewProcess()
 	broker := amqp.Broker{}
 	err = broker.SetupBroker([]amqp.Exchange{
 		amqp.ExchangeWithDefaults("events-listener", ""),
-	}, []amqp.Queue{
-		/*{
-			Name:       "client",
-			Durable:    true,
-			AutoDelete: false,
-			Exclusive:  false,
-			NoWait:     false,
-			Bindings: []amqp.Binding{
-				amqp.BindingWithDefaults("oom", "client"),
-			},
-			Consumers: []amqp.Consumer{
-				amqp.ConsumerWithDefaults(false, p.ProcessAMQPMsg),
-			},
-		},*/
-	},
+	}, []amqp.Queue{},
 		amqp.URIScheme(config.Global.RabbitmqScheme),
 		amqp.Address(config.Global.RabbitmqAddress, config.Global.RabbitmqPort),
 		amqp.Credentials(config.Global.RabbitmqUsername, config.Global.RabbitmqPassword),
@@ -111,9 +96,9 @@ func main() {
 }
 
 func listen(client *kubernetes.Clientset, eventCh chan *watcher.ContainerRestartEvent, stopCh chan struct{}) {
-	watcher := watcher.NewPodWatcher(client, eventCh)
+	w := watcher.NewPodWatcher(client, eventCh)
 
-	err := watcher.Run(stopCh)
+	err := w.Run(stopCh)
 	if err != nil {
 		log.Printf(" error in listen %v", err)
 	}
