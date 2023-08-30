@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/flybits/gophercon2023/amqp"
+	"github.com/flybits/gophercon2023/client/cmd/config"
 	"github.com/flybits/gophercon2023/client/db"
 	"github.com/flybits/gophercon2023/client/service"
 	"github.com/flybits/gophercon2023/server/pb"
@@ -156,12 +157,14 @@ func (c *Controller) receiveStream(ctx context.Context, stream pb.Server_GetData
 		}
 	}
 
-	log.Printf("finishing receiving streaming")
 	errCh <- nil
 	log.Printf("finished receiving streaming")
 }
 
 func (c *Controller) processData(data *pb.Data, streamID string) error {
+
+	time.Sleep(config.Global.Delay)
+
 	if data.Value == 6 {
 		return fmt.Errorf("mock error")
 	}

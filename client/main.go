@@ -40,6 +40,14 @@ func main() {
 		log.Printf("error when connecting to server grpc:%v", err)
 	}
 
+	delay := os.Getenv("CONFIG_DELAY")
+	log.Printf("delay is %v", delay)
+	d, err := time.ParseDuration(delay)
+	if err != nil {
+		log.Printf("error parsing duration %v", err)
+	}
+
+	config.Global.Delay = d
 	c := logic.NewController(sm, &broker, database)
 
 	p := process.NewProcess(database, &c)

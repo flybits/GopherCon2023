@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
         - name: client
-          image: armanmasoumi/gophercon-client:50
+          image: armanmasoumi/gophercon-client:51
           ports:
             - name: http
               containerPort: 8000
@@ -41,6 +41,11 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: status.hostIP
+            - name: CONFIG_DELAY
+              valueFrom:
+                configMapKeyRef:
+                  name: client
+                  key: delay
           volumeMounts:
             - mountPath: /etc/rabbitmq-admin
               name: rabbitmq-admin
