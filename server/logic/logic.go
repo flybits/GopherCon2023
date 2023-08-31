@@ -2,11 +2,13 @@ package logic
 
 import (
 	"fmt"
+	"github.com/flybits/gophercon2023/server/cmd/config"
 	"github.com/flybits/gophercon2023/server/pb"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/keepalive"
 	"log"
 	"net"
+	"time"
 )
 
 type (
@@ -85,6 +87,7 @@ func (s *Server) GetData(req *pb.DataRequest, stream pb.Server_GetDataServer) er
 
 func retrieveData(i int32) (*pb.Data, error) {
 
+	time.Sleep(config.Global.Delay)
 	if i == 5 {
 		return nil, fmt.Errorf("some error happened")
 	}
