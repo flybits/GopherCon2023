@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"github.com/flybits/gophercon2023/server/cmd/config"
 	"github.com/flybits/gophercon2023/server/handler"
 	"github.com/flybits/gophercon2023/server/logic"
 	"log"
@@ -21,6 +22,15 @@ func main() {
 	if err != nil {
 		panic(fmt.Sprintf("Could not initiate a listen on rpc requests: %s", err))
 	}
+
+	delay := os.Getenv("CONFIG_DELAY")
+	log.Printf("delay is %v", delay)
+	d, err := time.ParseDuration(delay)
+	if err != nil {
+		log.Printf("error parsing duration %v", err)
+	}
+
+	config.Global.Delay = d
 
 	log.Printf("Starting HTTP server ...")
 
