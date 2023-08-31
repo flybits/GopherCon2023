@@ -7,7 +7,6 @@ import (
 	"google.golang.org/grpc/keepalive"
 	"log"
 	"net"
-	"time"
 )
 
 type (
@@ -71,9 +70,6 @@ func (s *Server) GetData(req *pb.DataRequest, stream pb.Server_GetDataServer) er
 }
 
 func retrieveData(i int32) (*pb.Data, error) {
-
-	time.Sleep(1 * time.Second)
-
 	return &pb.Data{
 		UserID: fmt.Sprintf("userID%v", i),
 		Value:  i,

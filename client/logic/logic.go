@@ -3,12 +3,14 @@ package logic
 import (
 	"context"
 	"github.com/flybits/gophercon2023/amqp"
+	"github.com/flybits/gophercon2023/client/cmd/config"
 	"github.com/flybits/gophercon2023/client/db"
 	"github.com/flybits/gophercon2023/client/service"
 	"github.com/flybits/gophercon2023/server/pb"
 	"io"
 	"log"
 	"sync"
+	"time"
 )
 
 type Controller struct {
@@ -82,6 +84,7 @@ func (c *Controller) receiveStream(stream pb.Server_GetDataClient, sm db.StreamM
 }
 
 func (c *Controller) processData(data *pb.Data, streamID string) error {
+	time.Sleep(config.Global.Delay)
 	err := c.db.UpsertData(context.Background(), data, streamID)
 	return err
 }

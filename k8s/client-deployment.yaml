@@ -2,7 +2,6 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: client
-  namespace: naive
   labels:
     app: client
 spec:
@@ -17,7 +16,7 @@ spec:
     spec:
       containers:
         - name: client
-          image: armanmasoumi/gophercon-client:naive5
+          image: armanmasoumi/gophercon-client:demo-naive
           ports:
             - name: http
               containerPort: 8000
@@ -42,6 +41,11 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: status.hostIP
+            - name: CONFIG_DELAY
+              valueFrom:
+                configMapKeyRef:
+                  name: client
+                  key: delay
           resources:
             requests:
               cpu: 0.1

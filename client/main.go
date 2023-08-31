@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/flybits/gophercon2023/amqp"
+	"github.com/flybits/gophercon2023/client/cmd/config"
 	"github.com/flybits/gophercon2023/client/db"
 	"github.com/flybits/gophercon2023/client/handler"
 	"github.com/flybits/gophercon2023/client/logic"
@@ -32,6 +33,15 @@ func main() {
 	if err != nil {
 		log.Printf("error when connecting to server grpc:%v", err)
 	}
+
+	delay := os.Getenv("CONFIG_DELAY")
+	log.Printf("delay is %v", delay)
+	d, err := time.ParseDuration(delay)
+	if err != nil {
+		log.Printf("error parsing duration %v", err)
+	}
+
+	config.Global.Delay = d
 
 	c := logic.NewController(sm, &broker, database)
 

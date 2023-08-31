@@ -18,6 +18,8 @@ var Global = struct {
 	MongoReplicaset    string
 	MongoConnTimeout   time.Duration
 	MongoAuthMechanism string
+
+	Delay time.Duration
 }{
 
 	RabbitmqScheme:   "amqp",
