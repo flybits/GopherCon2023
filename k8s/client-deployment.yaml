@@ -2,7 +2,6 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: client
-  namespace: naive-panic
   labels:
     app: client
 spec:
@@ -17,7 +16,7 @@ spec:
     spec:
       containers:
         - name: client
-          image: armanmasoumi/gophercon-client:naive-panic1
+          image: armanmasoumi/gophercon-client:demo
           ports:
             - name: http
               containerPort: 8000
@@ -42,6 +41,15 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: status.hostIP
+            - name: CONFIG_DELAY
+              valueFrom:
+                configMapKeyRef:
+                  name: client
+                  key: delay
+          volumeMounts:
+            - mountPath: /etc/rabbitmq-admin
+              name: rabbitmq-admin
+              readOnly: true
           resources:
             requests:
               cpu: 0.1
@@ -49,3 +57,7 @@ spec:
             limits:
               cpu: 0.5
               memory: "100Mi"
+      volumes:
+        - name: rabbitmq-admin
+          secret:
+            secretName: rabbitmq-admin
