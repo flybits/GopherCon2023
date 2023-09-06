@@ -14,6 +14,7 @@ spec:
       labels:
         app: client
     spec:
+      terminationGracePeriodSeconds: 5
       containers:
         - name: client
           image: armanmasoumi/gophercon-client:demo
